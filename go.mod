@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/aws/aws-sdk-go v1.50.35
 	github.com/boumenot/gocover-cobertura v1.2.0
-	github.com/charmbracelet/log v0.3.1
+	github.com/charmbracelet/log v0.4.0
 	github.com/golangci/golangci-lint v1.56.2
 	github.com/segmentio/golines v0.12.2
 	github.com/spf13/cobra v1.8.0
@@ -49,7 +49,7 @@ require (
 	github.com/ccojocar/zxcvbn-go v1.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/charithe/durationcheck v0.0.10 // indirect
-	github.com/charmbracelet/lipgloss v0.9.1 // indirect
+	github.com/charmbracelet/lipgloss v0.10.0 // indirect
 	github.com/chavacava/garif v0.1.0 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/daixiang0/gci v0.12.1 // indirect
@@ -149,7 +149,7 @@ require (
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/ryancurrah/gomodguard v1.3.0 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
