@@ -3,7 +3,7 @@ module github.com/joshbeard/web-indexer
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.54.20
+	github.com/aws/aws-sdk-go v1.55.5
 	github.com/boumenot/gocover-cobertura v1.2.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/golangci/golangci-lint v1.59.1
