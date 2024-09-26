@@ -21,7 +21,7 @@ jobs:
         run: make check-vuln
 
       - name: gosec
-        uses: securego/gosec@v2.20.0
+        uses: securego/gosec@v2.21.4
         env:
           GO111MODULE: on
         with:
