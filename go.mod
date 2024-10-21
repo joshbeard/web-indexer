@@ -5,7 +5,7 @@ toolchain go1.22.5
 
 require (
 	github.com/aws/aws-sdk-go v1.55.5
-	github.com/boumenot/gocover-cobertura v1.2.0
+	github.com/boumenot/gocover-cobertura v1.3.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/golangci/golangci-lint v1.60.1
 	github.com/segmentio/golines v0.12.2
