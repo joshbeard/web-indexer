@@ -66,6 +66,7 @@ type Data struct {
 	Items        []Item
 	Parent       string
 	HasParent    bool
+	ParentURL    string
 }
 
 type BackendSetup interface {
@@ -321,6 +322,9 @@ func (i Indexer) data(items []Item, path string) (Data, error) {
 		}
 		data.Parent = resolveParentPath(i.Cfg.BaseURL, relativeParent, i.Cfg.IndexFile, i.Cfg.LinkToIndexes)
 		data.HasParent = parent != path
+		if data.HasParent {
+			data.ParentURL = resolveItemURL(i.Cfg.BaseURL, relativeParent, "..", true, i.Cfg.LinkToIndexes, i.Cfg.IndexFile)
+		}
 	}
 
 	// Process items within the data function to set their URLs
