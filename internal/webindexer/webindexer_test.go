@@ -19,9 +19,9 @@ type MockSource struct {
 	mock.Mock
 }
 
-func (m *MockSource) Read(path string) ([]Item, bool, error) {
+func (m *MockSource) Read(path string) ([]*Item, bool, error) {
 	args := m.Called(path)
-	return args.Get(0).([]Item), args.Bool(1), args.Error(2)
+	return args.Get(0).([]*Item), args.Bool(1), args.Error(2)
 }
 
 func (m *MockSource) Write(data Data, content string) error {
@@ -45,13 +45,13 @@ func TestIndexer_Generate(t *testing.T) {
 		},
 	}
 
-	mockSource.On("Read", mock.Anything).Return([]Item{}, false, nil)
+	mockSource.On("Read", mock.Anything).Return([]*Item{}, false, nil)
 	// Expect EnsureDirExists to be called on the target
 	mockTarget.On("EnsureDirExists", mock.AnythingOfType("string")).Return(nil)
 	// Write should NOT be called when Read returns empty items
 	// mockTarget.On("Write", mock.Anything, mock.Anything).Return(nil)
 
-	err := indexer.Generate("path/to/generate")
+	err := indexer.Generate(nil, "path/to/generate")
 	assert.NoError(t, err)
 
 	mockSource.AssertExpectations(t)
@@ -88,13 +88,13 @@ func TestCustomTemplate(t *testing.T) {
 
 	require.NoError(t, err)
 
-	mockSource.On("Read", mock.Anything).Return([]Item{}, false, nil)
+	mockSource.On("Read", mock.Anything).Return([]*Item{}, false, nil)
 	// Expect EnsureDirExists to be called on the target before writing
 	mockTarget.On("EnsureDirExists", mock.AnythingOfType("string")).Return(nil)
 	// Write should NOT be called when Read returns empty items
 	// mockTarget.On("Write", mock.Anything, mock.Anything).Return(nil)
 
-	err = indexer.Generate("path/to/generate")
+	err = indexer.Generate(nil, "path/to/generate")
 	assert.NoError(t, err)
 
 	// Check the file content
@@ -298,8 +298,8 @@ func TestIndexer_ProcessItemForData(t *testing.T) {
 	// No need to call setupBackends as we manually set BasePath
 
 	// Simulate items
-	itemDir := Item{Name: "dir", IsDir: true}
-	itemFile1 := Item{Name: "file1.txt", IsDir: false}
+	itemDir := &Item{Name: "dir", IsDir: true}
+	itemFile1 := &Item{Name: "file1.txt", IsDir: false}
 
 	// Test directory item
 	modifiedItemDir, err := indexer.processItemForData(sourceDir, itemDir)
@@ -437,7 +437,7 @@ func TestGenerate_Recursive(t *testing.T) {
 	}), mock.AnythingOfType("string")).Return(nil).Once()
 
 	// 5. Call Generate from the root source path
-	err = indexer.Generate(absSourceDir)
+	err = indexer.Generate(nil, absSourceDir)
 	require.NoError(t, err)
 
 	// 6. Assert mock expectations were met

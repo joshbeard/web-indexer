@@ -23,7 +23,7 @@ type S3API interface {
 
 var _ FileSource = &S3Backend{}
 
-func (s *S3Backend) Read(prefix string) ([]Item, bool, error) {
+func (s *S3Backend) Read(prefix string) ([]*Item, bool, error) {
 	// Ensure the prefix has a trailing slash for s3 keys
 	if !strings.HasSuffix(prefix, "/") {
 		prefix = prefix + "/"
@@ -62,11 +62,11 @@ func (s *S3Backend) Read(prefix string) ([]Item, bool, error) {
 			log.Infof("Skipping indexing of %s/%s (found skipindex file %s), will include in parent directory", s.bucket, prefix, fileName)
 			// Return empty items but mark as not having noindex file
 			// This will prevent indexing this directory but still include it in the parent
-			return []Item{}, false, nil
+			return []*Item{}, false, nil
 		}
 	}
 
-	var items []Item
+	var items []*Item
 	// Process all other files
 	for _, content := range resp.Contents {
 		if shouldSkip(*content.Key, s.cfg.IndexFile, s.cfg.Skips) {
@@ -76,11 +76,12 @@ func (s *S3Backend) Read(prefix string) ([]Item, bool, error) {
 		// Get the relative name by removing the prefix
 		itemName := strings.TrimPrefix(*content.Key, prefix)
 
-		item := Item{
+		item := &Item{
 			Name:         itemName,
-			Size:         humanizeBytes(*content.Size),
-			LastModified: content.LastModified.Format(s.cfg.DateFormat),
+			Size:         *content.Size,
+			LastModified: *content.LastModified,
 			IsDir:        false,
+			HasMetadata:  true,
 		}
 
 		items = append(items, item)
@@ -117,7 +118,7 @@ func (s *S3Backend) Read(prefix string) ([]Item, bool, error) {
 		}
 
 		dirName := strings.TrimPrefix(*commonPrefix.Prefix, prefix)
-		item := Item{
+		item := &Item{
 			Name:  dirName,
 			IsDir: true,
 		}

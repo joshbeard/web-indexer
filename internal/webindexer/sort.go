@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-func (i *Indexer) sort(items *[]Item) {
+func (i *Indexer) sort(items *[]TemplateItem) {
 	switch i.Cfg.SortByValue() {
 	case SortByDate:
 		orderByLastModified(items)
@@ -27,13 +27,13 @@ func (i *Indexer) sort(items *[]Item) {
 	}
 }
 
-func orderByName(items *[]Item) {
+func orderByName(items *[]TemplateItem) {
 	sort.SliceStable(*items, func(i, j int) bool {
 		return (*items)[i].Name < (*items)[j].Name
 	})
 }
 
-func orderByLastModified(items *[]Item) {
+func orderByLastModified(items *[]TemplateItem) {
 	sort.SliceStable(*items, func(i, j int) bool {
 		return (*items)[i].LastModified > (*items)[j].LastModified
 	})
@@ -41,7 +41,7 @@ func orderByLastModified(items *[]Item) {
 
 // orderByNaturalName sorts items by their names with numbers ordered
 // naturally. e.g. 1,2,10 instead of 1,10,2 or 0.8.2 before 0.8.10
-func orderByNaturalName(items *[]Item) {
+func orderByNaturalName(items *[]TemplateItem) {
 	sort.SliceStable(*items, func(i, j int) bool {
 		return cmpNatural((*items)[i].Name, (*items)[j].Name)
 	})
@@ -95,7 +95,7 @@ func cmpNatural(a, b string) bool {
 	return len(aSegments) < len(bSegments)
 }
 
-func orderDirsFirst(items *[]Item) {
+func orderDirsFirst(items *[]TemplateItem) {
 	sort.SliceStable(*items, func(i, j int) bool {
 		if (*items)[i].IsDir && !(*items)[j].IsDir {
 			return true

@@ -1,9 +1,11 @@
 package webindexer
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestOrderByName(t *testing.T) {
-	items := []Item{
+	items := []TemplateItem{
 		{Name: "banana"},
 		{Name: "apple"},
 		{Name: "cherry"},
@@ -19,7 +21,7 @@ func TestOrderByName(t *testing.T) {
 }
 
 func TestOrderByLastModified(t *testing.T) {
-	items := []Item{
+	items := []TemplateItem{
 		{Name: "banana", LastModified: "2020-01-03"},
 		{Name: "apple", LastModified: "2020-01-01"},
 		{Name: "cherry", LastModified: "2020-01-02"},
@@ -35,7 +37,7 @@ func TestOrderByLastModified(t *testing.T) {
 }
 
 func TestOrderByNaturalName(t *testing.T) {
-	items := []Item{
+	items := []TemplateItem{
 		{Name: "item10"},
 		{Name: "item2"},
 		{Name: "item1"},
@@ -51,7 +53,7 @@ func TestOrderByNaturalName(t *testing.T) {
 }
 
 func TestOrderDirsFirst(t *testing.T) {
-	items := []Item{
+	items := []TemplateItem{
 		{Name: "file.txt", IsDir: false},
 		{Name: "folder", IsDir: true},
 		{Name: "another_folder", IsDir: true},

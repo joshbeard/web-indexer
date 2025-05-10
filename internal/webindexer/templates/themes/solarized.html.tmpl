@@ -148,14 +148,14 @@
                 <a href="{{.URL}}">{{.Name}}</a>
             </td>
             <td class="size">
-                {{if not .IsDir}}
+                {{if .Size}}
                 {{.Size}}
                 {{else}}
                 -
                 {{end}}
             </td>
             <td class="date">
-                {{if not .IsDir}}
+                {{if .LastModified}}
                 {{.LastModified}}
                 {{else}}
                 -

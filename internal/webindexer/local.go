@@ -16,8 +16,8 @@ type LocalBackend struct {
 
 var _ FileSource = &LocalBackend{}
 
-func (l *LocalBackend) Read(path string) ([]Item, bool, error) {
-	var items []Item
+func (l *LocalBackend) Read(path string) ([]*Item, bool, error) {
+	var items []*Item
 	log.Debugf("Listing files in %s", path)
 	files, err := os.ReadDir(path)
 	if err != nil {
@@ -38,7 +38,7 @@ func (l *LocalBackend) Read(path string) ([]Item, bool, error) {
 				log.Infof("Skipping indexing of %s (found skipindex file %s), will include in parent directory", path, file.Name())
 				// Return empty items but mark as not having noindex file
 				// This will prevent indexing this directory but still include it in the parent
-				return []Item{}, false, nil
+				return []*Item{}, false, nil
 			}
 		}
 	}
@@ -76,15 +76,13 @@ func (l *LocalBackend) Read(path string) ([]Item, bool, error) {
 			}
 		}
 
-		size := humanizeBytes(stat.Size())
-		modified := stat.ModTime().Format(l.cfg.DateFormat)
-
 		itemName := file.Name()
-		item := Item{
+		item := &Item{
 			Name:         itemName,
-			Size:         size,
-			LastModified: modified,
+			Size:         stat.Size(),
+			LastModified: stat.ModTime(),
 			IsDir:        stat.IsDir(),
+			HasMetadata:  true,
 		}
 
 		items = append(items, item)
