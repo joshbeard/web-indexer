@@ -27,6 +27,7 @@ type Config struct {
 	Title          string   `yaml:"title"         mapstructure:"title"`
 	CfgFile        string   `yaml:"-"`
 	BasePath       string   `yaml:"-"`
+	S3Endpoint     string   `yaml:"s3_endpoint"   mapstructure:"s3_endpoint"`
 }
 
 type SortBy string

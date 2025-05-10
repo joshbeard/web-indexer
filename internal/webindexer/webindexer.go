@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/charmbracelet/log"
@@ -147,7 +148,11 @@ func setupBackends(indexer *Indexer) error {
 
 	if isS3URI(indexer.Cfg.Source) || isS3URI(indexer.Cfg.Target) {
 		log.Debug("Setting up S3 session")
-		sess, err := session.NewSession()
+		cfg := aws.NewConfig()
+		if indexer.Cfg.S3Endpoint != "" {
+			cfg = cfg.WithEndpoint(indexer.Cfg.S3Endpoint)
+		}
+		sess, err := session.NewSession(cfg)
 		if err != nil {
 			return fmt.Errorf("failed to create AWS session: %w", err)
 		}
