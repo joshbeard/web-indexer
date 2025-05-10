@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2 - 2025-05-10
+
+* ci fixes for multiarch builds
+
 ## 0.7.1 - 2025-05-10
 
 - fix: respect IndexFile and LinkToIndexes configuration for "Go Up" link @huncrys (#86)
