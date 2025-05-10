@@ -124,11 +124,9 @@
         </tr>
         {{ if .ParentURL }}
         <tr>
-            <td class="filename"><a href="{{ .ParentURL }}">
+            <td class="filename" colspan="3"><a href="{{ .ParentURL }}">
                 <span class="icon">🔼</span>Go Up</a>
             </td>
-            <td>-</td>
-            <td>-</td>
         </tr>
         {{end}}
         {{range .Items}}
