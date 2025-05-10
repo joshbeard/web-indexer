@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1 - 2025-05-10
+
+- fix: respect IndexFile and LinkToIndexes configuration for "Go Up" link @huncrys (#86)
+- build(deps): bump github.com/aws/aws-sdk-go from 1.55.6 to 1.55.7 @[dependabot[bot]](https://github.com/apps/dependabot) (#84)
+
 ## 0.7.0 - 2025-04-24
 
 - feat: skip index @joshbeard (#81)
