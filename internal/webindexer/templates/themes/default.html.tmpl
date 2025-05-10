@@ -63,9 +63,9 @@
             <th>Size</th>
             <th>Last Modified</th>
         </tr>
-        {{ if .HasParent }}
+        {{ if .ParentURL }}
         <tr>
-            <td class="filename"><a href="../index.html">
+            <td class="filename"><a href="{{ .ParentURL }}">
                 <span class="icon">🔼</span>Go Up</a>
             </td>
             <td>-</td>
