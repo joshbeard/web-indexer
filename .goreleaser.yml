@@ -48,20 +48,65 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 dockers:
-  - id: web-indexer
+  - id: web-indexer-amd64
     ids:
       - web-indexer
+    use: buildx
+    goos: linux
+    goarch: amd64
     image_templates:
-      - joshbeard/web-indexer:latest
-      - joshbeard/web-indexer:{{ .Tag }}
-      - ghcr.io/joshbeard/web-indexer/web-indexer:latest
-      - ghcr.io/joshbeard/web-indexer/web-indexer:{{ .Tag }}
+      - joshbeard/web-indexer:{{ .Tag }}-amd64
+      - joshbeard/web-indexer:latest-amd64
+      - ghcr.io/joshbeard/web-indexer/web-indexer:{{ .Tag }}-amd64
+      - ghcr.io/joshbeard/web-indexer/web-indexer:latest-amd64
     extra_files:
       - "entrypoint.sh"
     build_flag_templates:
       - "--pull"
-      - "--platform=linux/amd64,linux/arm64"
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+  - id: web-indexer-arm64
+    ids:
+      - web-indexer
     use: buildx
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - joshbeard/web-indexer:{{ .Tag }}-arm64
+      - joshbeard/web-indexer:latest-arm64
+      - ghcr.io/joshbeard/web-indexer/web-indexer:{{ .Tag }}-arm64
+      - ghcr.io/joshbeard/web-indexer/web-indexer:latest-arm64
+    extra_files:
+      - "entrypoint.sh"
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+
+docker_manifests:
+  - name_template: joshbeard/web-indexer:{{ .Tag }}
+    image_templates:
+      - joshbeard/web-indexer:{{ .Tag }}-amd64
+      - joshbeard/web-indexer:{{ .Tag }}-arm64
+  - name_template: joshbeard/web-indexer:latest
+    image_templates:
+      - joshbeard/web-indexer:latest-amd64
+      - joshbeard/web-indexer:latest-arm64
+  - name_template: ghcr.io/joshbeard/web-indexer/web-indexer:{{ .Tag }}
+    image_templates:
+      - ghcr.io/joshbeard/web-indexer/web-indexer:{{ .Tag }}-amd64
+      - ghcr.io/joshbeard/web-indexer/web-indexer:{{ .Tag }}-arm64
+  - name_template: ghcr.io/joshbeard/web-indexer/web-indexer:latest
+    image_templates:
+      - ghcr.io/joshbeard/web-indexer/web-indexer:latest-amd64
+      - ghcr.io/joshbeard/web-indexer/web-indexer:latest-arm64
+
 nfpms:
   - id: 'testpkg'
     vendor: "Josh Beard"
