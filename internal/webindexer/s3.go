@@ -79,7 +79,7 @@ func (s *S3Backend) Read(prefix string) ([]Item, bool, error) {
 		item := Item{
 			Name:         itemName,
 			Size:         humanizeBytes(*content.Size),
-			LastModified: content.LastModified.Format(s.cfg.DateFormat),
+			LastModified: content.LastModified.Local().Format(s.cfg.DateFormat),
 			IsDir:        false,
 		}
 
