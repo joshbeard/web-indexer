@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -41,7 +42,7 @@ type Indexer struct {
 // FileSource is an interface for listing the contents of a directory or S3
 // bucket.
 type FileSource interface {
-	Read(path string) ([]Item, bool, error)
+	Read(path string) ([]*Item, bool, error)
 	Write(data Data, content string) error
 	EnsureDirExists(relativePath string) error
 }
@@ -49,11 +50,12 @@ type FileSource interface {
 // Item represents an S3 key, or a local file/directory.
 type Item struct {
 	Name         string
-	Size         string
-	LastModified string
+	Size         int64
+	LastModified time.Time
 	URL          string
 	IsDir        bool
 	Items        []Item
+	HasMetadata  bool
 }
 
 // Data holds the template data.
@@ -63,10 +65,18 @@ type Data struct {
 	RootPath     string
 	RelativePath string
 	URL          string
-	Items        []Item
+	Items        []TemplateItem
 	Parent       string
 	HasParent    bool
 	ParentURL    string
+}
+
+type TemplateItem struct {
+	Name         string
+	Size         string
+	LastModified string
+	URL          string
+	IsDir        bool
 }
 
 type BackendSetup interface {
@@ -199,7 +209,7 @@ func setupBackend(uri string, indexer *Indexer) (FileSource, error) {
 }
 
 // Generate the index file for the given path.
-func (i Indexer) Generate(path string) error {
+func (i Indexer) Generate(parent *Item, path string) error {
 	var err error
 
 	items, hasNoIndex, err := i.Source.Read(path)
@@ -213,15 +223,46 @@ func (i Indexer) Generate(path string) error {
 		return nil
 	}
 
-	// Prepare template data regardless of whether items were found
-	data, err := i.data(items, path)
-	if err != nil {
-		return err
+	// Ensure the target directory exists before attempting to write or recurse
+	relativePath := strings.TrimPrefix(path, i.Cfg.BasePath)
+
+	// Ensure relative path is prefixed with a slash. This will also set an
+	// empty base path to "/" (such as when listing the root of an S3 bucket).
+	// S3 keys don't have a leading slash, but we normalize for consistency
+	if !strings.HasPrefix(relativePath, "/") {
+		relativePath = "/" + relativePath
 	}
 
-	// Ensure the target directory exists before attempting to write or recurse
-	if err := i.Target.EnsureDirExists(data.RelativePath); err != nil {
-		return fmt.Errorf("failed to ensure target directory exists for %s: %w", data.RelativePath, err)
+	if err := i.Target.EnsureDirExists(relativePath); err != nil {
+		return fmt.Errorf("failed to ensure target directory exists for %s: %w", relativePath, err)
+	}
+
+	// Process items to handle recursion.
+	// This loop won't execute if items is empty.
+	for _, item := range items { // Iterate over original items
+		err := i.parseItem(path, item) // Pass item by value, check error
+		if err != nil {
+			// Stop processing if any subdirectory fails? Or just log?
+			// Return the error to propagate it up.
+			log.Errorf("Error generating index for %s: %v", item.Name, err)
+			return err
+		}
+
+		if parent != nil {
+			parent.Size += item.Size
+
+			if !parent.HasMetadata || item.LastModified.After(parent.LastModified) {
+				parent.LastModified = item.LastModified
+			}
+
+			parent.HasMetadata = true
+		}
+	}
+
+	// Prepare template data regardless of whether items were found
+	data, err := i.data(items, path, relativePath)
+	if err != nil {
+		return err
 	}
 
 	// Only generate and write the index file if there are items to list.
@@ -264,17 +305,6 @@ func (i Indexer) Generate(path string) error {
 		log.Debugf("Skipping index file generation for %s (no items or skipindex found)", path)
 	}
 
-	// Process items to handle recursion.
-	// This loop won't execute if items is empty.
-	for _, item := range items { // Iterate over original items
-		err := i.parseItem(path, item) // Pass item by value, check error
-		if err != nil {
-			// Stop processing if any subdirectory fails? Or just log?
-			// Return the error to propagate it up.
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -292,19 +322,10 @@ func getThemeTemplate(theme string) string {
 	}
 }
 
-func (i Indexer) data(items []Item, path string) (Data, error) {
-	relativePath := strings.TrimPrefix(path, i.Cfg.BasePath)
-
-	// Ensure relative path is prefixed with a slash. This will also set an
-	// empty base path to "/" (such as when listing the root of an S3 bucket).
-	// S3 keys don't have a leading slash, but we normalize for consistency
-	if !strings.HasPrefix(relativePath, "/") {
-		relativePath = "/" + relativePath
-	}
-
+func (i Indexer) data(items []*Item, path, relativePath string) (Data, error) {
 	data := Data{
 		RootPath:     i.Cfg.BasePath,
-		Items:        make([]Item, 0, len(items)),
+		Items:        make([]TemplateItem, 0, len(items)),
 		Path:         path,
 		RelativePath: relativePath,
 		URL:          i.Cfg.BaseURL,
@@ -328,7 +349,7 @@ func (i Indexer) data(items []Item, path string) (Data, error) {
 	}
 
 	// Process items within the data function to set their URLs
-	processedItems := make([]Item, 0, len(items))
+	processedItems := make([]TemplateItem, 0, len(items))
 	for _, item := range items {
 		processedItem, err := i.processItemForData(path, item) // Rename to avoid confusion with recursive call
 		if err != nil {
@@ -343,7 +364,7 @@ func (i Indexer) data(items []Item, path string) (Data, error) {
 }
 
 // processItemForData generates the URL for an item. Does NOT handle recursion.
-func (i Indexer) processItemForData(path string, item Item) (Item, error) {
+func (i Indexer) processItemForData(path string, item *Item) (TemplateItem, error) {
 	// Calculate the relative path by removing the base path
 	relativePath := strings.TrimPrefix(path, i.Cfg.BasePath)
 	// Ensure relative path is prefixed with a slash
@@ -351,18 +372,27 @@ func (i Indexer) processItemForData(path string, item Item) (Item, error) {
 		relativePath = "/" + relativePath
 	}
 
-	item.URL = resolveItemURL(i.Cfg.BaseURL, relativePath, item.Name, item.IsDir, i.Cfg.LinkToIndexes, i.Cfg.IndexFile)
-	// Return the item with the URL set
-	return item, nil
+	processed := TemplateItem{
+		Name:  item.Name,
+		URL:   resolveItemURL(i.Cfg.BaseURL, relativePath, item.Name, item.IsDir, i.Cfg.LinkToIndexes, i.Cfg.IndexFile),
+		IsDir: item.IsDir,
+	}
+
+	if item.HasMetadata {
+		processed.Size = humanizeBytes(item.Size)
+		processed.LastModified = item.LastModified.Format(i.Cfg.DateFormat)
+	}
+
+	return processed, nil
 }
 
 // parseItem handles the recursive call for directories.
-func (i Indexer) parseItem(path string, item Item) error {
+func (i Indexer) parseItem(path string, item *Item) error {
 	// If the item is a directory and recursive mode is enabled, generate its index
 	if item.IsDir && i.Cfg.Recursive {
 		// Construct the full path for the subdirectory
 		subDirPath := filepath.Join(path, item.Name)
-		if err := i.Generate(subDirPath); err != nil {
+		if err := i.Generate(item, subDirPath); err != nil {
 			// Log the error but also return it to stop processing this branch
 			log.Errorf("Error generating index for subdirectory %s: %v", subDirPath, err)
 			return fmt.Errorf("error generating index for subdirectory %s: %w", subDirPath, err)

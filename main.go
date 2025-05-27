@@ -88,7 +88,7 @@ func run(args []string) error {
 	}
 
 	log.Infof("Generating index for %s", cfg.Source)
-	err = indexer.Generate(indexer.Cfg.BasePath)
+	err = indexer.Generate(nil, indexer.Cfg.BasePath)
 	if err != nil {
 		return fmt.Errorf("unable to generate index: %w", err)
 	}
