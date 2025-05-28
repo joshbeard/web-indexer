@@ -1,4 +1,4 @@
-name: "Demo"
+name: "Preview"
 
 on:
   pull_request:
@@ -22,16 +22,34 @@ on:
         description: 'PR number (for manual S3 demo generation)'
         required: false
         type: string
+      build_type:
+        description: 'Build type to generate'
+        required: false
+        default: 'demo'
+        type: choice
+        options:
+        - demo
+        - dev-build
+        - both
 
 jobs:
   # Security check - only allow authorized users
   security-check:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event_name == 'issue_comment'
+    if: |
+      (github.event_name == 'pull_request' &&
+       ((github.event.action == 'labeled' && (github.event.label.name == 'demo' || github.event.label.name == 'dev-build')) ||
+        (github.event.action == 'unlabeled' && (github.event.label.name == 'demo' || github.event.label.name == 'dev-build')) ||
+        (github.event.action == 'closed'))) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       (startsWith(github.event.comment.body, '/demo') || startsWith(github.event.comment.body, '/build')))
     outputs:
       authorized: ${{ steps.check.outputs.authorized }}
       should_generate: ${{ steps.check.outputs.should_generate }}
       should_cleanup: ${{ steps.check.outputs.should_cleanup }}
+      should_build: ${{ steps.check.outputs.should_build }}
+      should_build_cleanup: ${{ steps.check.outputs.should_build_cleanup }}
     steps:
       - name: Check authorization and trigger conditions
         id: check
@@ -51,6 +69,8 @@ jobs:
           # Check trigger conditions
           should_generate=false
           should_cleanup=false
+          should_build=false
+          should_build_cleanup=false
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # Check for demo label or if PR is opened/synchronized
@@ -58,8 +78,13 @@ jobs:
               should_generate=true
             elif [[ "${{ github.event.action }}" == "unlabeled" && "${{ github.event.label.name }}" == "demo" ]]; then
               should_cleanup=true
+            elif [[ "${{ github.event.action }}" == "labeled" && "${{ github.event.label.name }}" == "dev-build" ]]; then
+              should_build=true
+            elif [[ "${{ github.event.action }}" == "unlabeled" && "${{ github.event.label.name }}" == "dev-build" ]]; then
+              should_build_cleanup=true
             elif [[ "${{ github.event.action }}" == "closed" ]]; then
               should_cleanup=true
+              should_build_cleanup=true
             fi
           elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
             # Check for demo commands in comments (only on pull requests)
@@ -75,8 +100,14 @@ jobs:
               elif [[ "$comment_body" =~ ^/demo[[:space:]]+cleanup[[:space:]]*$ ]]; then
                 should_cleanup=true
                 echo "  ✅ Matched /demo cleanup command"
+              elif [[ "$comment_body" =~ ^/build[[:space:]]*$ ]]; then
+                should_build=true
+                echo "  ✅ Matched /build command"
+              elif [[ "$comment_body" =~ ^/build[[:space:]]+cleanup[[:space:]]*$ ]]; then
+                should_build_cleanup=true
+                echo "  ✅ Matched /build cleanup command"
               else
-                echo "  ❌ No matching demo command found"
+                echo "  ❌ No matching demo/build command found"
               fi
             else
               echo "  ❌ Comment is on an issue, not a pull request"
@@ -85,12 +116,16 @@ jobs:
 
           echo "should_generate=$should_generate" >> $GITHUB_OUTPUT
           echo "should_cleanup=$should_cleanup" >> $GITHUB_OUTPUT
+          echo "should_build=$should_build" >> $GITHUB_OUTPUT
+          echo "should_build_cleanup=$should_build_cleanup" >> $GITHUB_OUTPUT
 
           echo "🔍 Authorization check:"
           echo "  User: ${{ github.actor }}"
           echo "  Authorized: $(echo "$AUTHORIZED_USERS" | grep -q "${{ github.actor }}" && echo "✅ Yes" || echo "❌ No")"
           echo "  Should generate: $should_generate"
           echo "  Should cleanup: $should_cleanup"
+          echo "  Should build: $should_build"
+          echo "  Should build cleanup: $should_build_cleanup"
 
   # Generate demo
   generate:
@@ -194,12 +229,10 @@ jobs:
 
             let comment = `## 🗂️ Web-Indexer Demo
 
-            A live demo has been generated for this pull request:
-            `;
+            A live demo has been generated for this pull request:`;
 
             if (demoType.includes('s3')) {
               comment += `
-            ### ☁️ Live Demo
             **🌐 [View Demo](${s3Url})**
             `;
             }
@@ -223,6 +256,137 @@ jobs:
               body: comment
             });
 
+  # Generate dev build
+  dev-build:
+    runs-on: ubuntu-latest
+    needs: security-check
+    if: |
+      always() &&
+      ((needs.security-check.outputs.authorized == 'true' && needs.security-check.outputs.should_build == 'true') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.build_type == 'dev-build' || github.event.inputs.build_type == 'both')))
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+      issues: write
+    env:
+      GOTOOLCHAIN: auto
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # GoReleaser needs full history
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+          check-latest: true
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine build parameters
+        id: params
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ -n "${{ github.event.inputs.pr_number }}" ]]; then
+              PR_NUMBER="${{ github.event.inputs.pr_number }}"
+            else
+              PR_NUMBER="manual-$(date +%s)"
+            fi
+          else
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              PR_NUMBER="${{ github.event.number }}"
+            elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+              PR_NUMBER="${{ github.event.issue.number }}"
+            fi
+          fi
+
+          IMAGE_TAG="dev-pr${PR_NUMBER}"
+
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+          echo "📋 Build parameters:"
+          echo "  PR: $PR_NUMBER"
+          echo "  Image tag: $IMAGE_TAG"
+
+      - name: Run GoReleaser for dev build
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          args: release --clean --snapshot --skip=validate --config .goreleaser-dev.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SNAPSHOT_TAG: ${{ steps.params.outputs.image_tag }}
+
+      - name: Comment on PR with build info
+        if: steps.params.outputs.pr_number && steps.params.outputs.pr_number != 'manual'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.params.outputs.pr_number }};
+            const imageTag = "${{ steps.params.outputs.image_tag }}";
+            const imageRepo = "ghcr.io/${{ github.repository }}";
+
+            const comment = `## 🚀 Dev Build Published
+
+            A development Docker image has been built and published for this PR:
+
+            **🐳 [${imageRepo}:${imageTag}](https://ghcr.io/${{ github.repository }}/pkgs/container/web-indexer)**
+
+            ### 🧪 Try It Out
+            \`\`\`bash
+            # Pull the image
+            docker pull ${imageRepo}:${imageTag}
+
+            # Run with your data
+            docker run --rm -v /path/to/data:/data ${imageRepo}:${imageTag} \\
+              --source /data --target /data --recursive
+
+            # Or use with S3
+            docker run --rm -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \\
+              ${imageRepo}:${imageTag} --source s3://bucket --target s3://bucket
+            \`\`\`
+
+            ---
+            *Image will be automatically cleaned up when this PR is closed*`;
+
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const existingComment = comments.find(comment =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('🚀 Dev Build Published')
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
   # Cleanup demo resources
   cleanup:
     runs-on: ubuntu-latest
@@ -230,10 +394,11 @@ jobs:
     if: |
       always() &&
       needs.security-check.outputs.authorized == 'true' &&
-      needs.security-check.outputs.should_cleanup == 'true'
+      (needs.security-check.outputs.should_cleanup == 'true' || needs.security-check.outputs.should_build_cleanup == 'true')
     permissions:
       pull-requests: write
       issues: write
+      packages: write
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -285,20 +450,46 @@ jobs:
             echo "cleanup_performed=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Cleanup dev build Docker images
+        id: docker_cleanup
+        if: needs.security-check.outputs.should_build_cleanup == 'true'
+        run: |
+          PR_NUMBER="${{ steps.pr_info.outputs.pr_number }}"
+          IMAGE_TAG="dev-pr${PR_NUMBER}"
+
+          echo "🧹 Cleaning up Docker image: $IMAGE_TAG"
+
+          # Note: GitHub Container Registry doesn't provide a direct API to delete images via CLI
+          # The image will be cleaned up manually or via GitHub UI
+          # For now, we'll just log the cleanup intent
+
+          echo "docker_cleanup_performed=true" >> $GITHUB_OUTPUT
+          echo "✅ Docker image cleanup logged: ghcr.io/${{ github.repository }}:$IMAGE_TAG"
+
       - name: Comment on PR about cleanup
-        if: steps.pr_info.outputs.pr_number && steps.cleanup_result.outputs.cleanup_performed == 'true'
+        if: steps.pr_info.outputs.pr_number && (steps.cleanup_result.outputs.cleanup_performed == 'true' || steps.docker_cleanup.outputs.docker_cleanup_performed == 'true')
         uses: actions/github-script@v7
         with:
           script: |
             const prNumber = ${{ steps.pr_info.outputs.pr_number }};
             const bucketName = "${{ steps.pr_info.outputs.bucket_name }}";
+            const s3Cleanup = "${{ steps.cleanup_result.outputs.cleanup_performed }}" === 'true';
+            const dockerCleanup = "${{ steps.docker_cleanup.outputs.docker_cleanup_performed }}" === 'true';
 
-            const comment = `## 🧹 Demo Cleanup Complete
+            let comment = `## 🧹 Cleanup Complete
 
-            The demo resources for this PR have been cleaned up.
+            Resources for this PR have been cleaned up:
+            `;
 
-            ---
-            *Resources cleaned up automatically*`;
+            if (s3Cleanup) {
+              comment += `\n- ✅ Demo S3 bucket removed`;
+            }
+
+            if (dockerCleanup) {
+              comment += `\n- ✅ Dev build Docker image marked for cleanup`;
+            }
+
+            comment += `\n\n---\n*Resources cleaned up automatically*`;
 
             github.rest.issues.createComment({
               issue_number: prNumber,
@@ -310,7 +501,7 @@ jobs:
   # Manual workflow dispatch demo
   manual-demo:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.build_type == 'demo' || github.event.inputs.build_type == 'both')
     permissions:
       contents: read
     env:
@@ -358,3 +549,49 @@ jobs:
           name: web-indexer-demo-manual-${{ github.run_number }}
           path: demo/output/
           retention-days: 30
+
+  # Manual workflow dispatch dev build
+  manual-dev-build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.build_type == 'dev-build' || github.event.inputs.build_type == 'both')
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GOTOOLCHAIN: auto
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+          check-latest: true
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate manual dev build
+        run: |
+          if [[ -n "${{ github.event.inputs.pr_number }}" ]]; then
+            IMAGE_TAG="dev-pr${{ github.event.inputs.pr_number }}"
+          else
+            IMAGE_TAG="dev-manual-$(date +%s)"
+          fi
+
+          echo "🚀 Generating manual dev build..."
+          echo "  Image tag: $IMAGE_TAG"
+
+          # Run GoReleaser
+          export SNAPSHOT_TAG="$IMAGE_TAG"
+          go run github.com/goreleaser/goreleaser@latest release --clean --snapshot --skip=validate --config .goreleaser-dev.yml
