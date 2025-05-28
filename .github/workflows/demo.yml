@@ -62,12 +62,24 @@ jobs:
               should_cleanup=true
             fi
           elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-            # Check for demo commands in comments
-            comment_body="${{ github.event.comment.body }}"
-            if [[ "$comment_body" =~ ^/demo[[:space:]]*$ ]]; then
-              should_generate=true
-            elif [[ "$comment_body" =~ ^/demo[[:space:]]+cleanup[[:space:]]*$ ]]; then
-              should_cleanup=true
+            # Check for demo commands in comments (only on pull requests)
+            echo "🔍 Processing issue_comment event:"
+            echo "  Issue type: ${{ github.event.issue.pull_request && 'pull_request' || 'issue' }}"
+            echo "  Comment body: '${{ github.event.comment.body }}'"
+
+            if [[ "${{ github.event.issue.pull_request }}" != "null" ]]; then
+              comment_body="${{ github.event.comment.body }}"
+              if [[ "$comment_body" =~ ^/demo[[:space:]]*$ ]]; then
+                should_generate=true
+                echo "  ✅ Matched /demo command"
+              elif [[ "$comment_body" =~ ^/demo[[:space:]]+cleanup[[:space:]]*$ ]]; then
+                should_cleanup=true
+                echo "  ✅ Matched /demo cleanup command"
+              else
+                echo "  ❌ No matching demo command found"
+              fi
+            else
+              echo "  ❌ Comment is on an issue, not a pull request"
             fi
           fi
 
@@ -86,8 +98,8 @@ jobs:
     needs: security-check
     if: |
       always() &&
-      (needs.security-check.outputs.authorized == 'true' && needs.security-check.outputs.should_generate == 'true') ||
-      github.event_name == 'workflow_dispatch'
+      ((needs.security-check.outputs.authorized == 'true' && needs.security-check.outputs.should_generate == 'true') ||
+      github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
       pull-requests: write
