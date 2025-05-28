@@ -1,0 +1,11 @@
+source: demo/data
+target: demo/output/configured
+title: "Web-Indexer Demo - {relativePath}"
+recursive: true
+theme: nord
+minify: true
+link_to_index: false
+order: asc
+sort_by: name_natural
+dirs_first: true
+date_format: "2006-01-02 15:04 MST"

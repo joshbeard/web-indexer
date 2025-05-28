@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - Web-Indexer Demo</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --error-bg: #fff3cd;
+            --error-border: #ffeaa7;
+            --info-bg: #e3f2fd;
+            --info-border: #2196f3;
+            --btn-bg: #007bff;
+            --btn-hover-bg: #0056b3;
+            --link-color: #0066cc;
+            --border-color: #dddddd;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1a1a1a;
+                --text-color: #e0e0e0;
+                --error-bg: #3d2f00;
+                --error-border: #8b6914;
+                --info-bg: #1e3a5f;
+                --info-border: #4a90e2;
+                --btn-bg: #4a90e2;
+                --btn-hover-bg: #357abd;
+                --link-color: #4a90e2;
+                --border-color: #404040;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            text-align: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .error-box {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .btn {
+            display: inline-block;
+            background: var(--btn-bg);
+            color: white;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 0.5rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--btn-hover-bg);
+        }
+
+        .info-box {
+            background: var(--info-bg);
+            border: 1px solid var(--info-border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: left;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        code {
+            background: rgba(0,0,0,0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            code {
+                background: rgba(255,255,255,0.1);
+            }
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .footer {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .footer a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-box">
+        <h1>🚫 Page Not Found</h1>
+        <p>The page you're looking for doesn't exist in this web-indexer demo.</p>
+        <p>This might happen if you're trying to access a directory without an index file.</p>
+    </div>
+
+    <div class="info-box">
+        <h3>🌐 S3 Website Hosting</h3>
+        <p>This demo uses S3 static website hosting, which automatically serves <code>index.html</code> files when you access directories.</p>
+        <p>For example: <code>/nord/images/</code> automatically serves <code>/nord/images/index.html</code></p>
+    </div>
+
+    <h2>Available Demo Pages</h2>
+    <a href="/" class="btn">🏠 Main Demo</a>
+    <a href="/default/" class="btn">Default Theme</a>
+    <a href="/solarized/" class="btn">Solarized Theme</a>
+    <a href="/nord/" class="btn">Nord Theme</a>
+    <a href="/dracula/" class="btn">Dracula Theme</a>
+
+    <hr>
+    <div class="footer">
+        <p><a href="https://github.com/joshbeard/web-indexer" target="_blank">View on GitHub</a></p>
+    </div>
+</body>
+</html>

@@ -54,6 +54,23 @@ check-vuln: ## Check for vulnerabilities using 'govulncheck'
 	@echo "Checking for vulnerabilities..."
 	go run golang.org/x/vuln/cmd/govulncheck ./...
 
+## Demo ##
+.PHONY: demo
+demo: ## Generate and serve a live demo (both local and S3)
+	./scripts/demo.sh both --serve
+
+.PHONY: demo-local
+demo-local: ## Generate and serve a local-only demo
+	./scripts/demo.sh local --serve
+
+.PHONY: demo-s3
+demo-s3: ## Generate S3 demo (requires AWS credentials)
+	./scripts/demo.sh s3
+
+.PHONY: demo-cleanup
+demo-cleanup: ## Clean up demo files and temporary S3 resources
+	./scripts/demo.sh --cleanup
+
 .PHONY: clean
 clean: ## Clean test files
 	rm -f dist/*

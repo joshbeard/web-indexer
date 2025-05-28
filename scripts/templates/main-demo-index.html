@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web-Indexer Demo</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #ffffff;
+            --card-border: #dddddd;
+            --card-hover-shadow: rgba(0,0,0,0.1);
+            --link-color: #0066cc;
+            --badge-bg: #ff9800;
+            --disabled-opacity: 0.6;
+            --disabled-color: #999999;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1a1a1a;
+                --text-color: #e0e0e0;
+                --card-bg: #2d2d2d;
+                --card-border: #404040;
+                --card-hover-shadow: rgba(255,255,255,0.1);
+                --link-color: #4a90e2;
+                --badge-bg: #ff9800;
+                --disabled-opacity: 0.6;
+                --disabled-color: #666666;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .demo-card {
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            background-color: var(--card-bg);
+            transition: box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+
+        .demo-card:hover {
+            box-shadow: 0 4px 8px var(--card-hover-shadow);
+        }
+
+        .demo-card h3 {
+            margin-top: 0;
+        }
+
+        .demo-card a {
+            text-decoration: none;
+            color: var(--link-color);
+            font-weight: bold;
+        }
+
+        .demo-card.disabled {
+            opacity: var(--disabled-opacity);
+        }
+
+        .demo-card.disabled a {
+            color: var(--disabled-color);
+            cursor: not-allowed;
+        }
+
+        .s3-badge {
+            background: var(--badge-bg);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .footer a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        pre {
+            background: rgba(0,0,0,0.05);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            pre {
+                background: rgba(255,255,255,0.05);
+            }
+        }
+
+        code {
+            background: rgba(0,0,0,0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            code {
+                background: rgba(255,255,255,0.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🗂️ Web-Indexer Live Demo</h1>
+    <p>Welcome to the web-indexer demonstration! This shows how the tool generates beautiful directory listings for both local directories and S3 buckets.</p>
+
+    <div class="demo-grid">
+        {{LOCAL_DEMO_CARD}}
+        {{S3_DEMO_CARD}}
+    </div>
+
+    <h2>🚀 Quick Start</h2>
+    <p>To generate your own directory listing:</p>
+    <pre><code>web-indexer --source /path/to/directory --target /path/to/output --recursive --theme nord</code></pre>
+
+    <div class="footer">
+        <p><a href="https://github.com/joshbeard/web-indexer" target="_blank">View on GitHub</a> |
+        <a href="https://github.com/joshbeard/web-indexer/releases" target="_blank">Download</a></p>
+    </div>
+</body>
+</html>

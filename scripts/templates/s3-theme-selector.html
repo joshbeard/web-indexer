@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web-Indexer Demo</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #ffffff;
+            --card-border: #dddddd;
+            --card-hover-shadow: rgba(0,0,0,0.1);
+            --info-bg: #e3f2fd;
+            --info-border: #2196f3;
+            --badge-bg: #ff9800;
+            --link-color: #0066cc;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #1a1a1a;
+                --text-color: #e0e0e0;
+                --card-bg: #2d2d2d;
+                --card-border: #404040;
+                --card-hover-shadow: rgba(255,255,255,0.1);
+                --info-bg: #1e3a5f;
+                --info-border: #4a90e2;
+                --badge-bg: #ff9800;
+                --link-color: #4a90e2;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .theme-card {
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            background-color: var(--card-bg);
+            transition: box-shadow 0.3s ease, background-color 0.3s ease;
+        }
+
+        .theme-card:hover {
+            box-shadow: 0 4px 8px var(--card-hover-shadow);
+        }
+
+        .theme-card a {
+            text-decoration: none;
+            color: var(--link-color);
+            font-weight: bold;
+        }
+
+        .info-box {
+            background: var(--info-bg);
+            border: 1px solid var(--info-border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .s3-badge {
+            background: var(--badge-bg);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .footer a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗂️ Web-Indexer Demo <span class="s3-badge">Live on S3</span></h1>
+    <p>Explore how web-indexer generates beautiful, responsive directory listings with different themes. All content is served directly from Amazon S3 with static website hosting.</p>
+
+    <div class="info-box">
+        <strong>🌐 Live S3 Demo:</strong> This demonstration shows web-indexer generating static directory listings from S3 bucket data, with automatic index.html serving and clean URLs.
+    </div>
+
+    <h2>Available Themes</h2>
+    <div class="theme-grid">
+        <div class="theme-card">
+            <a href="default/">Default Theme</a>
+            <p>Clean, minimal design with automatic light/dark mode</p>
+        </div>
+        <div class="theme-card">
+            <a href="solarized/">Solarized Theme</a>
+            <p>Based on the popular Solarized color scheme</p>
+        </div>
+        <div class="theme-card">
+            <a href="nord/">Nord Theme</a>
+            <p>Arctic-inspired colors from the Nord palette</p>
+        </div>
+        <div class="theme-card">
+            <a href="dracula/">Dracula Theme</a>
+            <p>Vibrant, high-contrast dark theme</p>
+        </div>
+    </div>
+
+    <h2>Features Demonstrated</h2>
+    <ul>
+        <li>📁 Recursive directory indexing from S3 buckets</li>
+        <li>🎨 Multiple beautiful themes with responsive design</li>
+        <li>🌐 Static website hosting with clean URLs</li>
+        <li>📱 Mobile-friendly responsive layouts</li>
+        <li>🚫 Directory exclusion with <code>.noindex</code> files</li>
+        <li>⏭️ Skip indexing with <code>.skipindex</code> files</li>
+        <li>🌙 Automatic dark mode support (try changing your system theme!)</li>
+    </ul>
+
+    <h2>🚀 Quick Start</h2>
+    <p>Generate your own directory listing:</p>
+    <pre><code>web-indexer --source /path/to/directory --target /path/to/output --recursive --theme nord</code></pre>
+
+    <div class="footer">
+        <p><a href="https://github.com/joshbeard/web-indexer" target="_blank">View on GitHub</a> |
+        <a href="https://github.com/joshbeard/web-indexer/releases" target="_blank">Download</a></p>
+    </div>
+</body>
+</html>
