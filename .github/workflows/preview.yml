@@ -227,27 +227,26 @@ jobs:
             const s3Url = "${{ steps.s3_url.outputs.s3_url }}";
             const demoType = "${{ steps.params.outputs.demo_type }}";
 
-            let comment = `## 🗂️ Web-Indexer Demo
+            let comment = `## 🗂️ Web-Indexer Preview
 
             A live demo has been generated for this pull request:`;
 
             if (demoType.includes('s3')) {
               comment += `
-            **🌐 [View Demo](${s3Url})**
+            **🌐 [Preview on S3](${s3Url})**
             `;
             }
 
             if (demoType.includes('local') || demoType === 'both') {
               comment += `
-            ### 📁 Local Demo
+            ### 📁 Local Preview
             - Download the workflow artifacts to view locally
-            - Contains demos with all 4 themes
             `;
             }
 
             comment += `
             ---
-            *Demo will be automatically cleaned up when this PR is closed*`;
+            *Preview will be automatically cleaned up when this PR is closed, or when the preview label is removed by the repo owner*`;
 
             github.rest.issues.createComment({
               issue_number: prNumber,
