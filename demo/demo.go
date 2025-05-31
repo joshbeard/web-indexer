@@ -421,12 +421,14 @@ func copyTemplateFiles(src, dst string) error {
 			return os.MkdirAll(dstPath, info.Mode())
 		}
 
+		// #nosec G304 -- path is validated by validateFilePath() above
 		srcFile, err := os.Open(path)
 		if err != nil {
 			return err
 		}
 		defer srcFile.Close()
 
+		// #nosec G304 -- dstPath is validated by validateFilePath() above
 		dstFile, err := os.Create(dstPath)
 		if err != nil {
 			return err
@@ -499,6 +501,7 @@ func generateIndexPage(config *DemoConfig, data DemoIndex, variant string) error
 		return fmt.Errorf("parsing template file %s: %w", templatePath, err)
 	}
 
+	// #nosec G304 -- outputPath is validated by validateFilePath() above
 	file, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("creating index file: %w", err)
@@ -570,11 +573,13 @@ func cleanupS3Bucket(config *DemoConfig) error {
 			continue
 		}
 
+		// #nosec G204 -- bucket.Name is validated by validateS3BucketName() above
 		deleteCmd := exec.Command("aws", "s3", "rm", fmt.Sprintf("s3://%s", bucket.Name), "--recursive")
 		if err := deleteCmd.Run(); err != nil {
 			logf("Warning: Could not delete objects in bucket %s: %v", bucket.Name, err)
 		}
 
+		// #nosec G204 -- bucket.Name is validated by validateS3BucketName() above
 		rbCmd := exec.Command("aws", "s3", "rb", fmt.Sprintf("s3://%s", bucket.Name))
 		if err := rbCmd.Run(); err != nil {
 			logf("Warning: Could not delete bucket %s: %v", bucket.Name, err)
@@ -665,6 +670,7 @@ func uploadSampleDataToS3(config *DemoConfig) error {
 
 	// Upload sample data to s3://bucket/data/
 	dataS3Path := fmt.Sprintf("s3://%s/data/", config.S3Bucket)
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 	syncCmd := exec.Command("aws", "s3", "sync", config.DemoDataDir, dataS3Path)
 	output, err := syncCmd.CombinedOutput()
 	if err != nil {
@@ -747,6 +753,7 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 		return fmt.Errorf("parsing template file %s: %w", templatePath, err)
 	}
 
+	// #nosec G304 -- outputPath is validated by validateFilePath() above
 	file, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("creating index file: %w", err)
@@ -761,6 +768,7 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 	}
 
 	// Upload to S3 root
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 	uploadCmd := exec.Command("aws", "s3", "cp", outputPath, fmt.Sprintf("s3://%s/index.html", config.S3Bucket))
 	output, err := uploadCmd.CombinedOutput()
 	if err != nil {
@@ -784,6 +792,7 @@ func createS3BucketIfNotExists(config *DemoConfig) error {
 
 	// Check if the bucket already exists
 	logf("Checking if S3 bucket exists: %s", config.S3Bucket)
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 	existsCmd := exec.Command("aws", "s3", "ls", fmt.Sprintf("s3://%s", config.S3Bucket))
 	if err := existsCmd.Run(); err == nil {
 		logf("S3 bucket already exists")
@@ -795,9 +804,11 @@ func createS3BucketIfNotExists(config *DemoConfig) error {
 	var createCmd *exec.Cmd
 	if config.S3Region == "us-east-1" {
 		// For us-east-1, don't specify region
+		// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 		createCmd = exec.Command("aws", "s3", "mb", fmt.Sprintf("s3://%s", config.S3Bucket))
 	} else {
 		// For other regions, specify the region
+		// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 		createCmd = exec.Command("aws", "s3", "mb", fmt.Sprintf("s3://%s", config.S3Bucket), "--region", config.S3Region)
 	}
 
@@ -829,12 +840,13 @@ func configureS3StaticWebsiteHosting(config *DemoConfig) error {
 	}
 
 	// Configure static website hosting
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 	configureCmd := exec.Command("aws", "s3", "website", fmt.Sprintf("s3://%s", config.S3Bucket), "--index-document", "index.html", "--error-document", "error.html")
 	if err := configureCmd.Run(); err != nil {
 		return fmt.Errorf("configuring S3 static website hosting: %w", err)
 	}
 
-	// Disable block public access settings for the bucket
+	// Disable block public access
 	if err := disableS3BlockPublicAccess(config); err != nil {
 		logf("Warning: Could not disable block public access: %v", err)
 	}
@@ -862,6 +874,7 @@ func disableS3BlockPublicAccess(config *DemoConfig) error {
 	}
 
 	// Disable block public access
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 	disableCmd := exec.Command("aws", "s3api", "delete-public-access-block", "--bucket", config.S3Bucket)
 	output, err := disableCmd.CombinedOutput()
 	if err != nil {
@@ -910,6 +923,7 @@ func setS3BucketPolicy(config *DemoConfig) error {
 	}
 
 	// Apply bucket policy
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName(), tempFile.Name() is controlled
 	policyCmd := exec.Command("aws", "s3api", "put-bucket-policy", "--bucket", config.S3Bucket, "--policy", fmt.Sprintf("file://%s", tempFile.Name()))
 	output, err := policyCmd.CombinedOutput()
 	if err != nil {
@@ -940,6 +954,7 @@ func createAndUploadS3ErrorPage(config *DemoConfig) error {
 	}
 
 	// Read the error template
+	// #nosec G304 -- errorTemplatePath is validated by validateFilePath() above
 	errorData, err := os.ReadFile(errorTemplatePath)
 	if err != nil {
 		return fmt.Errorf("reading error template %s: %w", errorTemplatePath, err)
@@ -951,6 +966,7 @@ func createAndUploadS3ErrorPage(config *DemoConfig) error {
 	}
 
 	// Upload to S3
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
 	uploadCmd := exec.Command("aws", "s3", "cp", localErrorPath, fmt.Sprintf("s3://%s/error.html", config.S3Bucket))
 	output, err := uploadCmd.CombinedOutput()
 	if err != nil {
@@ -1077,12 +1093,14 @@ func copySourceFilesToTarget(sourceDir, targetDir string) error {
 			return os.MkdirAll(dstPath, info.Mode())
 		}
 
+		// #nosec G304 -- path is validated by validateFilePath() above
 		srcFile, err := os.Open(path)
 		if err != nil {
 			return err
 		}
 		defer srcFile.Close()
 
+		// #nosec G304 -- dstPath is validated by validateFilePath() above
 		dstFile, err := os.Create(dstPath)
 		if err != nil {
 			return err
@@ -1103,6 +1121,7 @@ func trackS3Bucket(config *DemoConfig) error {
 	}
 
 	var buckets []BucketRecord
+	// #nosec G304 -- bucketFile is validated by validateFilePath() above
 	if data, err := os.ReadFile(bucketFile); err == nil {
 		if err := json.Unmarshal(data, &buckets); err != nil {
 			return fmt.Errorf("unmarshaling bucket records: %w", err)
@@ -1151,6 +1170,7 @@ func getTrackedBuckets(config *DemoConfig) ([]BucketRecord, error) {
 	}
 
 	var buckets []BucketRecord
+	// #nosec G304 -- bucketFile is validated by validateFilePath() above
 	data, err := os.ReadFile(bucketFile)
 	if err != nil {
 		if os.IsNotExist(err) {
