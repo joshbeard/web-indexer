@@ -131,14 +131,25 @@ jobs:
           echo "  Demo variant: $demo_variant"
           echo "  Custom args: $custom_args"
 
+      - name: Debug - Show all outputs being set
+        run: |
+          echo "🔍 All job outputs being set:"
+          echo "  authorized=${{ steps.check.outputs.authorized }}"
+          echo "  should_generate=${{ steps.check.outputs.should_generate }}"
+          echo "  should_cleanup=${{ steps.check.outputs.should_cleanup }}"
+          echo "  should_build=${{ steps.check.outputs.should_build }}"
+          echo "  should_build_cleanup=${{ steps.check.outputs.should_build_cleanup }}"
+          echo "  custom_args=${{ steps.check.outputs.custom_args }}"
+          echo "  demo_variant=${{ steps.check.outputs.demo_variant }}"
+
   # Generate demo
   generate:
     runs-on: ubuntu-latest
     needs: security-check
     if: |
       always() &&
-      ((needs.security-check.outputs.authorized == 'true' && needs.security-check.outputs.should_generate == 'true') ||
-      github.event_name == 'workflow_dispatch')
+      needs.security-check.outputs.authorized == 'true' &&
+      needs.security-check.outputs.should_generate == 'true'
     permissions:
       contents: read
       pull-requests: write
@@ -147,6 +158,21 @@ jobs:
       GOTOOLCHAIN: auto
 
     steps:
+      - name: Debug workflow conditions
+        run: |
+          echo "🔍 Debug Information:"
+          echo "  Event: ${{ github.event_name }}"
+          echo "  Action: ${{ github.event.action || 'N/A' }}"
+          echo "  Authorized: ${{ needs.security-check.outputs.authorized }}"
+          echo "  Should Generate: ${{ needs.security-check.outputs.should_generate }}"
+          echo "  Should Cleanup: ${{ needs.security-check.outputs.should_cleanup }}"
+          echo "  Demo Variant: ${{ needs.security-check.outputs.demo_variant }}"
+          echo "  Custom Args: ${{ needs.security-check.outputs.custom_args }}"
+          echo ""
+          echo "🎯 This job should run when:"
+          echo "  - authorized == 'true' (current: ${{ needs.security-check.outputs.authorized }})"
+          echo "  - should_generate == 'true' (current: ${{ needs.security-check.outputs.should_generate }})"
+
       - uses: actions/checkout@v4
 
       - name: Setup Go
@@ -394,3 +420,46 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+
+  # Manual demo generation (for testing)
+  manual-generate:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    env:
+      GOTOOLCHAIN: auto
+
+    steps:
+      - name: Debug manual trigger
+        run: |
+          echo "🔍 Manual workflow dispatch triggered:"
+          echo "  Demo type: ${{ github.event.inputs.demo_type }}"
+          echo "  PR number: ${{ github.event.inputs.pr_number }}"
+          echo "  Custom demos: ${{ github.event.inputs.custom_demos }}"
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+          check-latest: true
+
+      - name: Build web-indexer
+        run: go build -o web-indexer .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.DEMO_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEMO_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Generate manual demo
+        run: |
+          echo "🚀 Generating manual demo..."
+          cd demo
+          make demo-s3
