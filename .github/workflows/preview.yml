@@ -172,6 +172,7 @@ jobs:
       always() &&
       needs.security-check.outputs.authorized == 'true' &&
       needs.security-check.outputs.should_generate == 'true'
+    environment: preview-pr
     permissions:
       contents: read
       pull-requests: write
