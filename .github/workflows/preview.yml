@@ -59,7 +59,7 @@ jobs:
        (startsWith(github.event.comment.body, '/demo') ||
         startsWith(github.event.comment.body, '/build'))) ||
       (github.event_name == 'pull_request' && github.event.action == 'closed')
-    environment: preview-pr  # Protected environment requiring approval
+    environment: preview-pr
     outputs:
       authorized: ${{ steps.check.outputs.authorized }}
       should_generate: ${{ steps.check.outputs.should_generate }}
@@ -366,7 +366,7 @@ jobs:
       always() &&
       needs.security-check.outputs.authorized == 'true' &&
       needs.security-check.outputs.should_cleanup == 'true'
-    environment: preview-pr  # Add environment for AWS credentials access
+    environment: preview-pr
     permissions:
       pull-requests: write
       issues: write
@@ -448,7 +448,7 @@ jobs:
   manual-generate:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
-    environment: preview-pr  # Use protected environment for AWS credentials
+    environment: preview-pr
     permissions:
       contents: read
       pull-requests: write
