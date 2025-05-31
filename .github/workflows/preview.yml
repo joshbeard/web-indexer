@@ -101,18 +101,19 @@ jobs:
           # Handle issue comments (PR comments)
           if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
             echo "Processing issue comment..."
-            comment_body="${{ github.event.comment.body }}"
+            comment_body='${{ github.event.comment.body }}'
             echo "Comment: $comment_body"
 
             if [[ "$comment_body" == "/demo" ]]; then
               should_generate=true
               demo_variant="themes"
               echo "✅ Matched /demo command"
-            elif echo "$comment_body" | grep -q '^/demo[[:space:]]\+--args[[:space:]]\+".*"$'; then
+            elif echo "$comment_body" | grep -q '^/demo[[:space:]]\+--'; then
               should_generate=true
               demo_variant="custom"
-              custom_args=$(echo "$comment_body" | sed -n 's|^/demo[[:space:]]\+--args[[:space:]]\+"\([^"]*\)"$|\1|p')
-              echo "✅ Matched /demo --args command with: $custom_args"
+              # Extract everything after "/demo "
+              custom_args=$(echo "$comment_body" | sed 's|^/demo[[:space:]]\+||')
+              echo "✅ Matched /demo with custom args: $custom_args"
             elif [[ "$comment_body" == "/demo cleanup" ]]; then
               should_cleanup=true
               echo "✅ Matched /demo cleanup command"
