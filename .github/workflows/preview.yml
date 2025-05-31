@@ -366,6 +366,7 @@ jobs:
       always() &&
       needs.security-check.outputs.authorized == 'true' &&
       needs.security-check.outputs.should_cleanup == 'true'
+    environment: preview-pr  # Add environment for AWS credentials access
     permissions:
       pull-requests: write
       issues: write
