@@ -86,7 +86,7 @@ jobs:
               should_generate=true
               demo_variant="themes"
               echo "✅ Matched /demo command"
-            elif [[ "$comment_body" =~ ^/demo[[:space:]]+--args[[:space:]]+"([^"]*)"$ ]]; then
+            elif echo "$comment_body" | grep -q '^/demo[[:space:]]\+--args[[:space:]]\+".*"$'; then
               should_generate=true
               demo_variant="custom"
               custom_args=$(echo "$comment_body" | sed -n 's|^/demo[[:space:]]\+--args[[:space:]]\+"\([^"]*\)"$|\1|p')
