@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -246,11 +247,18 @@ func setupS3Config(config *DemoConfig) error {
 		config.S3Bucket = fmt.Sprintf("%s-%d", config.Config.S3.BucketPrefix, time.Now().Unix())
 	}
 
+	// Validate S3 bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
 	if region := os.Getenv("AWS_REGION"); region != "" {
 		config.S3Region = region
 	} else {
 		config.S3Region = config.Config.S3.Region
-		os.Setenv("AWS_REGION", config.S3Region)
+		if err := os.Setenv("AWS_REGION", config.S3Region); err != nil {
+			return fmt.Errorf("setting AWS_REGION environment variable: %w", err)
+		}
 	}
 
 	if config.S3Region == "us-east-1" {
@@ -333,7 +341,7 @@ func createDemoData(config *DemoConfig) error {
 	dirs = append(dirs, baseDirs...)
 
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			return fmt.Errorf("creating directory %s: %w", dir, err)
 		}
 	}
@@ -379,9 +387,22 @@ func discoverDirectoriesFromTemplates(config *DemoConfig) ([]string, error) {
 
 // copyTemplateFiles recursively copies files from source to destination
 func copyTemplateFiles(src, dst string) error {
+	// Validate source and destination paths
+	if err := validateFilePath(src); err != nil {
+		return fmt.Errorf("invalid source path: %w", err)
+	}
+	if err := validateFilePath(dst); err != nil {
+		return fmt.Errorf("invalid destination path: %w", err)
+	}
+
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		// Validate the current path being processed
+		if err := validateFilePath(path); err != nil {
+			return fmt.Errorf("invalid file path %s: %w", path, err)
 		}
 
 		relPath, err := filepath.Rel(src, path)
@@ -390,6 +411,11 @@ func copyTemplateFiles(src, dst string) error {
 		}
 
 		dstPath := filepath.Join(dst, relPath)
+
+		// Validate destination path
+		if err := validateFilePath(dstPath); err != nil {
+			return fmt.Errorf("invalid destination path: %w", err)
+		}
 
 		if info.IsDir() {
 			return os.MkdirAll(dstPath, info.Mode())
@@ -460,6 +486,14 @@ func generateIndexPage(config *DemoConfig, data DemoIndex, variant string) error
 	outputPath := filepath.Join(config.DemoOutputDir, variant, "index.html")
 	templatePath := filepath.Join(config.TemplatesDir, "demo-index.html")
 
+	// Validate paths
+	if err := validateFilePath(outputPath); err != nil {
+		return fmt.Errorf("invalid output path: %w", err)
+	}
+	if err := validateFilePath(templatePath); err != nil {
+		return fmt.Errorf("invalid template path: %w", err)
+	}
+
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return fmt.Errorf("parsing template file %s: %w", templatePath, err)
@@ -471,7 +505,14 @@ func generateIndexPage(config *DemoConfig, data DemoIndex, variant string) error
 	}
 	defer file.Close()
 
-	return tmpl.Execute(file, data)
+	if err := tmpl.Execute(file, data); err != nil {
+		return fmt.Errorf("executing template: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("closing index file: %w", err)
+	}
+
+	return nil
 }
 
 func cleanupDemo(config *DemoConfig) error {
@@ -523,6 +564,12 @@ func cleanupS3Bucket(config *DemoConfig) error {
 	for _, bucket := range buckets {
 		logf("Cleaning up bucket: %s", bucket.Name)
 
+		// Validate bucket name
+		if err := validateS3BucketName(bucket.Name); err != nil {
+			logf("Warning: Invalid bucket name %s, skipping: %v", bucket.Name, err)
+			continue
+		}
+
 		deleteCmd := exec.Command("aws", "s3", "rm", fmt.Sprintf("s3://%s", bucket.Name), "--recursive")
 		if err := deleteCmd.Run(); err != nil {
 			logf("Warning: Could not delete objects in bucket %s: %v", bucket.Name, err)
@@ -551,9 +598,15 @@ func serveDemo(config *DemoConfig) error {
 	logf("   Serving from: %s", dir)
 	logf("-----------------------------------------------------------------------")
 
-	http.Handle("/", http.FileServer(http.Dir(dir)))
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      http.FileServer(http.Dir(dir)),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	return server.ListenAndServe()
 }
 
 // generateS3Demo generates demos for S3 with S3 as both source and target
@@ -599,6 +652,11 @@ func generateS3Demo(config *DemoConfig) error {
 
 func uploadSampleDataToS3(config *DemoConfig) error {
 	logf("Uploading sample data to S3 data directory...")
+
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
 
 	// Ensure demo data exists locally first
 	if err := createDemoData(config); err != nil {
@@ -653,6 +711,11 @@ func generateS3DemosWithS3Source(config *DemoConfig) error {
 func generateAndUploadS3IndexPage(config *DemoConfig) error {
 	logf("Generating and uploading main S3 demo index page...")
 
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
 	// Create S3 demo index page locally
 	indexData := DemoIndex{
 		Title:       fmt.Sprintf("%s - S3", config.Config.Demo.Title),
@@ -662,7 +725,7 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 
 	// Generate locally in temp directory
 	tempDir := filepath.Join(config.DemoOutputDir, "temp-s3-index")
-	if err := os.MkdirAll(tempDir, 0o755); err != nil {
+	if err := os.MkdirAll(tempDir, 0o750); err != nil {
 		return fmt.Errorf("creating temp directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
@@ -670,6 +733,14 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 	// Generate index page
 	outputPath := filepath.Join(tempDir, "index.html")
 	templatePath := filepath.Join(config.TemplatesDir, "demo-index.html")
+
+	// Validate paths
+	if err := validateFilePath(outputPath); err != nil {
+		return fmt.Errorf("invalid output path: %w", err)
+	}
+	if err := validateFilePath(templatePath); err != nil {
+		return fmt.Errorf("invalid template path: %w", err)
+	}
 
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
@@ -685,7 +756,9 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 	if err := tmpl.Execute(file, indexData); err != nil {
 		return fmt.Errorf("executing template: %w", err)
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("closing index file: %w", err)
+	}
 
 	// Upload to S3 root
 	uploadCmd := exec.Command("aws", "s3", "cp", outputPath, fmt.Sprintf("s3://%s/index.html", config.S3Bucket))
@@ -699,6 +772,11 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 }
 
 func createS3BucketIfNotExists(config *DemoConfig) error {
+	// Validate bucket name first
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
 	// Check if AWS CLI is available
 	if _, err := exec.LookPath("aws"); err != nil {
 		return fmt.Errorf("AWS CLI not found")
@@ -740,6 +818,11 @@ func createS3BucketIfNotExists(config *DemoConfig) error {
 func configureS3StaticWebsiteHosting(config *DemoConfig) error {
 	logf("Configuring S3 static website hosting...")
 
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
 	// Check if AWS CLI is available
 	if _, err := exec.LookPath("aws"); err != nil {
 		return fmt.Errorf("AWS CLI not found, skipping static website hosting configuration")
@@ -768,6 +851,11 @@ func configureS3StaticWebsiteHosting(config *DemoConfig) error {
 func disableS3BlockPublicAccess(config *DemoConfig) error {
 	logf("Disabling S3 block public access...")
 
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
 	// Check if AWS CLI is available
 	if _, err := exec.LookPath("aws"); err != nil {
 		return fmt.Errorf("AWS CLI not found, skipping block public access configuration")
@@ -786,6 +874,11 @@ func disableS3BlockPublicAccess(config *DemoConfig) error {
 
 func setS3BucketPolicy(config *DemoConfig) error {
 	logf("Setting S3 bucket policy for public read access...")
+
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
 
 	// Create bucket policy JSON
 	policy := fmt.Sprintf(`{
@@ -812,7 +905,9 @@ func setS3BucketPolicy(config *DemoConfig) error {
 	if _, err := tempFile.WriteString(policy); err != nil {
 		return fmt.Errorf("writing policy to temp file: %w", err)
 	}
-	tempFile.Close()
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("closing temp file: %w", err)
+	}
 
 	// Apply bucket policy
 	policyCmd := exec.Command("aws", "s3api", "put-bucket-policy", "--bucket", config.S3Bucket, "--policy", fmt.Sprintf("file://%s", tempFile.Name()))
@@ -828,8 +923,21 @@ func setS3BucketPolicy(config *DemoConfig) error {
 func createAndUploadS3ErrorPage(config *DemoConfig) error {
 	logf("Creating and uploading S3 error page...")
 
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
 	errorTemplatePath := filepath.Join(config.TemplatesDir, "s3-error.html")
 	localErrorPath := filepath.Join(config.DemoOutputDir, "s3-error.html")
+
+	// Validate paths
+	if err := validateFilePath(errorTemplatePath); err != nil {
+		return fmt.Errorf("invalid error template path: %w", err)
+	}
+	if err := validateFilePath(localErrorPath); err != nil {
+		return fmt.Errorf("invalid local error path: %w", err)
+	}
 
 	// Read the error template
 	errorData, err := os.ReadFile(errorTemplatePath)
@@ -838,7 +946,7 @@ func createAndUploadS3ErrorPage(config *DemoConfig) error {
 	}
 
 	// Write error page locally
-	if err := os.WriteFile(localErrorPath, errorData, 0o644); err != nil {
+	if err := os.WriteFile(localErrorPath, errorData, 0o600); err != nil {
 		return fmt.Errorf("writing local error page %s: %w", localErrorPath, err)
 	}
 
@@ -872,6 +980,17 @@ func validateDemos(config *Config) error {
 }
 
 func runWebIndexer(config *DemoConfig, args []string) error {
+	// Validate binary path
+	if err := validateFilePath(config.WebIndexerBinary); err != nil {
+		return fmt.Errorf("invalid web-indexer binary path: %w", err)
+	}
+
+	// Ensure the binary exists and is executable
+	if _, err := os.Stat(config.WebIndexerBinary); err != nil {
+		return fmt.Errorf("web-indexer binary not found: %w", err)
+	}
+
+	// #nosec G204 -- WebIndexerBinary path is validated and constructed from trusted config
 	cmd := exec.Command(config.WebIndexerBinary, args...)
 	cmd.Dir = config.ProjectRoot
 
@@ -924,9 +1043,22 @@ func parseArgs(s string) ([]string, error) {
 
 // copySourceFilesToTarget copies source files to target directory
 func copySourceFilesToTarget(sourceDir, targetDir string) error {
+	// Validate source and target directories
+	if err := validateFilePath(sourceDir); err != nil {
+		return fmt.Errorf("invalid source directory: %w", err)
+	}
+	if err := validateFilePath(targetDir); err != nil {
+		return fmt.Errorf("invalid target directory: %w", err)
+	}
+
 	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		// Validate the current path being processed
+		if err := validateFilePath(path); err != nil {
+			return fmt.Errorf("invalid file path %s: %w", path, err)
 		}
 
 		relPath, err := filepath.Rel(sourceDir, path)
@@ -935,6 +1067,11 @@ func copySourceFilesToTarget(sourceDir, targetDir string) error {
 		}
 
 		dstPath := filepath.Join(targetDir, relPath)
+
+		// Validate destination path
+		if err := validateFilePath(dstPath); err != nil {
+			return fmt.Errorf("invalid destination path: %w", err)
+		}
 
 		if info.IsDir() {
 			return os.MkdirAll(dstPath, info.Mode())
@@ -959,6 +1096,11 @@ func copySourceFilesToTarget(sourceDir, targetDir string) error {
 
 func trackS3Bucket(config *DemoConfig) error {
 	bucketFile := filepath.Join(config.ProjectRoot, ".demo-buckets.json")
+
+	// Validate file path
+	if err := validateFilePath(bucketFile); err != nil {
+		return fmt.Errorf("invalid bucket file path: %w", err)
+	}
 
 	var buckets []BucketRecord
 	if data, err := os.ReadFile(bucketFile); err == nil {
@@ -992,7 +1134,7 @@ func trackS3Bucket(config *DemoConfig) error {
 		return fmt.Errorf("marshaling bucket records: %w", err)
 	}
 
-	if err := os.WriteFile(bucketFile, data, 0o644); err != nil {
+	if err := os.WriteFile(bucketFile, data, 0o600); err != nil {
 		return fmt.Errorf("writing bucket records: %w", err)
 	}
 
@@ -1002,6 +1144,11 @@ func trackS3Bucket(config *DemoConfig) error {
 
 func getTrackedBuckets(config *DemoConfig) ([]BucketRecord, error) {
 	bucketFile := filepath.Join(config.ProjectRoot, ".demo-buckets.json")
+
+	// Validate file path
+	if err := validateFilePath(bucketFile); err != nil {
+		return nil, fmt.Errorf("invalid bucket file path: %w", err)
+	}
 
 	var buckets []BucketRecord
 	data, err := os.ReadFile(bucketFile)
@@ -1022,6 +1169,14 @@ func getTrackedBuckets(config *DemoConfig) ([]BucketRecord, error) {
 func removeTrackedBucket(config *DemoConfig, bucketName string) error {
 	bucketFile := filepath.Join(config.ProjectRoot, ".demo-buckets.json")
 
+	// Validate file path and bucket name
+	if err := validateFilePath(bucketFile); err != nil {
+		return fmt.Errorf("invalid bucket file path: %w", err)
+	}
+	if err := validateS3BucketName(bucketName); err != nil {
+		return fmt.Errorf("invalid bucket name: %w", err)
+	}
+
 	buckets, err := getTrackedBuckets(config)
 	if err != nil {
 		return err
@@ -1039,7 +1194,7 @@ func removeTrackedBucket(config *DemoConfig, bucketName string) error {
 		return fmt.Errorf("marshaling bucket records: %w", err)
 	}
 
-	return os.WriteFile(bucketFile, data, 0o644)
+	return os.WriteFile(bucketFile, data, 0o600)
 }
 
 // parseCustomDemos parses semicolon-separated custom demo specifications
@@ -1089,4 +1244,59 @@ func parseCustomDemos(customDemosStr string) ([]DemoSpec, error) {
 	}
 
 	return customDemos, nil
+}
+
+// validateS3BucketName validates S3 bucket name to prevent injection attacks
+func validateS3BucketName(bucket string) error {
+	if bucket == "" {
+		return fmt.Errorf("bucket name cannot be empty")
+	}
+
+	// S3 bucket name validation (simplified)
+	// Must be 3-63 characters, lowercase letters, numbers, dots, hyphens
+	matched, err := regexp.MatchString(`^[a-z0-9][a-z0-9.-]*[a-z0-9]$`, bucket)
+	if err != nil {
+		return fmt.Errorf("regex error: %w", err)
+	}
+	if !matched {
+		return fmt.Errorf("invalid S3 bucket name: %s", bucket)
+	}
+
+	if len(bucket) < 3 || len(bucket) > 63 {
+		return fmt.Errorf("S3 bucket name must be 3-63 characters")
+	}
+
+	return nil
+}
+
+// validateFilePath validates file paths to prevent directory traversal
+func validateFilePath(path string) error {
+	if path == "" {
+		return fmt.Errorf("path cannot be empty")
+	}
+
+	// Resolve the path to its absolute form and clean it
+	cleanPath := filepath.Clean(path)
+
+	// Check for directory traversal attempts
+	if strings.Contains(cleanPath, "..") {
+		return fmt.Errorf("invalid path: contains directory traversal")
+	}
+
+	// Check for other dangerous patterns
+	if strings.Contains(cleanPath, "~") {
+		return fmt.Errorf("invalid path: contains tilde expansion")
+	}
+
+	// Check for null bytes (common in path injection attacks)
+	if strings.Contains(path, "\x00") {
+		return fmt.Errorf("invalid path: contains null bytes")
+	}
+
+	// Additional check: ensure the path doesn't start with certain dangerous patterns
+	if strings.HasPrefix(cleanPath, "/proc/") || strings.HasPrefix(cleanPath, "/sys/") {
+		return fmt.Errorf("invalid path: access to system directories not allowed")
+	}
+
+	return nil
 }
