@@ -37,17 +37,28 @@ on:
         - both
 
 jobs:
+  # Test job to verify issue_comment trigger works
+  comment-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment'
+    steps:
+      - name: Test comment trigger
+        run: |
+          echo "✅ Issue comment trigger is working!"
+          echo "  Author: ${{ github.event.comment.user.login }}"
+          echo "  Comment: ${{ github.event.comment.body }}"
+          echo "  Is PR: ${{ github.event.issue.pull_request != null }}"
+
   # Security check - only allow authorized users
   security-check:
     runs-on: ubuntu-latest
-    # Only run for PR events, issue comments on PRs, or manual workflow dispatch
+    # Only run for PR comments with commands or PR closure - NOT regular PR pushes
     if: >
-      github.event_name == 'pull_request' ||
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
        (startsWith(github.event.comment.body, '/demo') ||
         startsWith(github.event.comment.body, '/build'))) ||
-      github.event_name == 'workflow_dispatch'
+      (github.event_name == 'pull_request' && github.event.action == 'closed')
     environment: preview-pr  # Protected environment requiring approval
     outputs:
       authorized: ${{ steps.check.outputs.authorized }}
@@ -58,6 +69,17 @@ jobs:
       custom_args: ${{ steps.check.outputs.custom_args }}
       demo_variant: ${{ steps.check.outputs.demo_variant }}
     steps:
+      - name: Debug trigger event
+        run: |
+          echo "🚨 Security-check job triggered!"
+          echo "  Event: ${{ github.event_name }}"
+          echo "  Action: ${{ github.event.action || 'N/A' }}"
+          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            echo "  Comment author: ${{ github.event.comment.user.login }}"
+            echo "  Comment body: ${{ github.event.comment.body }}"
+            echo "  Is PR comment: ${{ github.event.issue.pull_request != null }}"
+          fi
+
       - name: Check authorization and trigger conditions
         id: check
         run: |
@@ -425,6 +447,7 @@ jobs:
   manual-generate:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
+    environment: preview-pr  # Use protected environment for AWS credentials
     permissions:
       contents: read
       pull-requests: write
@@ -439,6 +462,7 @@ jobs:
           echo "  Demo type: ${{ github.event.inputs.demo_type }}"
           echo "  PR number: ${{ github.event.inputs.pr_number }}"
           echo "  Custom demos: ${{ github.event.inputs.custom_demos }}"
+          echo "  Build type: ${{ github.event.inputs.build_type }}"
 
       - uses: actions/checkout@v4
 
