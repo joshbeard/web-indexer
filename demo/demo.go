@@ -662,7 +662,7 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 
 	// Generate locally in temp directory
 	tempDir := filepath.Join(config.DemoOutputDir, "temp-s3-index")
-	if err := os.MkdirAll(tempDir, 0755); err != nil {
+	if err := os.MkdirAll(tempDir, 0o755); err != nil {
 		return fmt.Errorf("creating temp directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
@@ -962,7 +962,9 @@ func trackS3Bucket(config *DemoConfig) error {
 
 	var buckets []BucketRecord
 	if data, err := os.ReadFile(bucketFile); err == nil {
-		json.Unmarshal(data, &buckets)
+		if err := json.Unmarshal(data, &buckets); err != nil {
+			return fmt.Errorf("unmarshaling bucket records: %w", err)
+		}
 	}
 
 	record := BucketRecord{
@@ -990,7 +992,7 @@ func trackS3Bucket(config *DemoConfig) error {
 		return fmt.Errorf("marshaling bucket records: %w", err)
 	}
 
-	if err := os.WriteFile(bucketFile, data, 0644); err != nil {
+	if err := os.WriteFile(bucketFile, data, 0o644); err != nil {
 		return fmt.Errorf("writing bucket records: %w", err)
 	}
 
@@ -1037,7 +1039,7 @@ func removeTrackedBucket(config *DemoConfig, bucketName string) error {
 		return fmt.Errorf("marshaling bucket records: %w", err)
 	}
 
-	return os.WriteFile(bucketFile, data, 0644)
+	return os.WriteFile(bucketFile, data, 0o644)
 }
 
 // parseCustomDemos parses semicolon-separated custom demo specifications
