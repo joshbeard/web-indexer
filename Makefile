@@ -10,26 +10,32 @@ help: ## Shows this help
 ## Linting ##
 .PHONY: modverify
 modverify: ## Runs 'go mod verify'
+	@echo "Checking module verification (go mod verify)..."
 	@go mod verify
 
 .PHONY: vet
 vet: ## Runs 'go vet'
+	@echo "Checking linting (go vet)..."
 	@go vet ./...
 
 .PHONY: gofumpt
 gofumpt: vet ## Check linting with 'gofumpt'
+	@echo "Checking linting (gofumpt)..."
 	@go run mvdan.cc/gofumpt -l -d .
 
 .PHONY: lines
 lines: ## Check long lines.
+	@echo "Checking long lines..."
 	@go run github.com/segmentio/golines -m 120 --dry-run internal/webindexer/*.go
 
 .PHONY: lines-fix
 lines-fix: lines ## Fix long lines
+	@echo "Fixing long lines..."
 	@go run github.com/segmentio/golines -m 120 -w internal/webindexer/*.go
 
 .PHONY: golangci-lint
 golangci-lint: ## Lint using 'golangci-lint'
+	@echo "Checking linting (golangci-lint)..."
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint \
 	run --timeout=300s --out-format checkstyle ./... 2>&1 | tee checkstyle-report.xml
 
@@ -53,23 +59,6 @@ coverage: test ## Generate a code test coverage report using 'gocover-cobertura'
 check-vuln: ## Check for vulnerabilities using 'govulncheck'
 	@echo "Checking for vulnerabilities..."
 	go run golang.org/x/vuln/cmd/govulncheck ./...
-
-## Demo ##
-.PHONY: demo
-demo: ## Generate and serve a live demo (both local and S3)
-	./scripts/demo.sh both --serve
-
-.PHONY: demo-local
-demo-local: ## Generate and serve a local-only demo
-	./scripts/demo.sh local --serve
-
-.PHONY: demo-s3
-demo-s3: ## Generate S3 demo (requires AWS credentials)
-	./scripts/demo.sh s3
-
-.PHONY: demo-cleanup
-demo-cleanup: ## Clean up demo files and temporary S3 resources
-	./scripts/demo.sh --cleanup
 
 .PHONY: clean
 clean: ## Clean test files

@@ -22,6 +22,10 @@ on:
         description: 'PR number (for manual S3 demo generation)'
         required: false
         type: string
+      custom_demos:
+        description: 'Custom demo arguments (optional, e.g., "--theme nord --title My Demo")'
+        required: false
+        type: string
       build_type:
         description: 'Build type to generate'
         required: false
@@ -44,33 +48,32 @@ jobs:
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
        (startsWith(github.event.comment.body, '/demo') || startsWith(github.event.comment.body, '/build')))
+    environment: preview-pr  # Protected environment requiring approval
     outputs:
       authorized: ${{ steps.check.outputs.authorized }}
       should_generate: ${{ steps.check.outputs.should_generate }}
       should_cleanup: ${{ steps.check.outputs.should_cleanup }}
       should_build: ${{ steps.check.outputs.should_build }}
       should_build_cleanup: ${{ steps.check.outputs.should_build_cleanup }}
+      custom_args: ${{ steps.check.outputs.custom_args }}
+      demo_variant: ${{ steps.check.outputs.demo_variant }}
     steps:
       - name: Check authorization and trigger conditions
         id: check
         run: |
-          # Define authorized users (repository owner and collaborators)
-          AUTHORIZED_USERS="joshbeard"  # Add more users separated by spaces
-
-          # Check if user is authorized
-          if echo "$AUTHORIZED_USERS" | grep -q "${{ github.actor }}"; then
-            echo "authorized=true" >> $GITHUB_OUTPUT
-          else
-            echo "authorized=false" >> $GITHUB_OUTPUT
-            echo "❌ User ${{ github.actor }} is not authorized to generate demos"
-            exit 0
-          fi
+          # Authorization is handled by the protected environment 'preview-pr'
+          # If this step runs, a repository maintainer has manually approved the demo generation
+          # This cannot be bypassed by modifying the workflow file
+          echo "authorized=true" >> $GITHUB_OUTPUT
+          echo "✅ Demo generation approved by repository maintainer via protected environment"
 
           # Check trigger conditions
           should_generate=false
           should_cleanup=false
           should_build=false
           should_build_cleanup=false
+          custom_args=""
+          demo_variant=""
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # Check for demo label or if PR is opened/synchronized
@@ -94,9 +97,22 @@ jobs:
 
             if [[ "${{ github.event.issue.pull_request }}" != "null" ]]; then
               comment_body="${{ github.event.comment.body }}"
+
+              # Parse different demo command formats
               if [[ "$comment_body" =~ ^/demo[[:space:]]*$ ]]; then
                 should_generate=true
-                echo "  ✅ Matched /demo command"
+                demo_variant="themes"
+                echo "  ✅ Matched /demo command (default themes)"
+              elif [[ "$comment_body" =~ ^/demo[[:space:]]+themes[[:space:]]*$ ]]; then
+                should_generate=true
+                demo_variant="themes"
+                echo "  ✅ Matched /demo themes command"
+              elif [[ "$comment_body" =~ ^/demo[[:space:]]+--args[[:space:]]+"([^"]*)"[[:space:]]*$ ]]; then
+                should_generate=true
+                demo_variant="custom"
+                # Extract the arguments from within quotes
+                custom_args=$(echo "$comment_body" | sed -n 's|^/demo[[:space:]]\+--args[[:space:]]\+"\([^"]*\)"[[:space:]]*$|\1|p')
+                echo "  ✅ Matched /demo --args command with: $custom_args"
               elif [[ "$comment_body" =~ ^/demo[[:space:]]+cleanup[[:space:]]*$ ]]; then
                 should_cleanup=true
                 echo "  ✅ Matched /demo cleanup command"
@@ -118,14 +134,17 @@ jobs:
           echo "should_cleanup=$should_cleanup" >> $GITHUB_OUTPUT
           echo "should_build=$should_build" >> $GITHUB_OUTPUT
           echo "should_build_cleanup=$should_build_cleanup" >> $GITHUB_OUTPUT
+          echo "custom_args=$custom_args" >> $GITHUB_OUTPUT
+          echo "demo_variant=$demo_variant" >> $GITHUB_OUTPUT
 
-          echo "🔍 Authorization check:"
+          echo "🔍 Trigger conditions:"
           echo "  User: ${{ github.actor }}"
-          echo "  Authorized: $(echo "$AUTHORIZED_USERS" | grep -q "${{ github.actor }}" && echo "✅ Yes" || echo "❌ No")"
           echo "  Should generate: $should_generate"
           echo "  Should cleanup: $should_cleanup"
           echo "  Should build: $should_build"
           echo "  Should build cleanup: $should_build_cleanup"
+          echo "  Demo variant: $demo_variant"
+          echo "  Custom args: $custom_args"
 
   # Generate demo
   generate:
@@ -198,8 +217,29 @@ jobs:
           echo "🚀 Generating demo..."
           echo "  Type: ${{ steps.params.outputs.demo_type }}"
           echo "  Bucket: $DEMO_S3_BUCKET"
+          echo "  Variant: ${{ needs.security-check.outputs.demo_variant }}"
+          echo "  Custom args: ${{ needs.security-check.outputs.custom_args }}"
 
-          ./scripts/demo.sh ${{ steps.params.outputs.demo_type }}
+          # Determine demo generation approach
+          DEMO_VARIANT="${{ needs.security-check.outputs.demo_variant }}"
+          CUSTOM_ARGS="${{ needs.security-check.outputs.custom_args }}"
+
+          # Check for custom demos from workflow dispatch
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.custom_demos }}" ]]; then
+            CUSTOM_ARGS="${{ github.event.inputs.custom_demos }}"
+            DEMO_VARIANT="custom"
+            echo "  Using custom demos from workflow dispatch: $CUSTOM_ARGS"
+          fi
+
+          cd demo
+
+          if [[ "$DEMO_VARIANT" == "custom" && -n "$CUSTOM_ARGS" ]]; then
+            echo "🎯 Generating config-based demos PLUS custom demo with args: $CUSTOM_ARGS"
+            make demo-s3 CUSTOM_DEMOS="$CUSTOM_ARGS"
+          else
+            echo "🎯 Generating all config-based demos (themes)"
+            make demo-s3
+          fi
 
       - name: Get S3 website URL
         id: s3_url
@@ -226,6 +266,8 @@ jobs:
             const bucketName = "${{ steps.params.outputs.bucket_name }}";
             const s3Url = "${{ steps.s3_url.outputs.s3_url }}";
             const demoType = "${{ steps.params.outputs.demo_type }}";
+            const demoVariant = "${{ needs.security-check.outputs.demo_variant }}";
+            const customArgs = "${{ needs.security-check.outputs.custom_args }}";
 
             let comment = `## 🗂️ Web-Indexer Preview
 
@@ -244,7 +286,36 @@ jobs:
             `;
             }
 
+            // Add demo configuration info
             comment += `
+            ### 🎯 Demo Configuration`;
+
+            if (demoVariant === 'custom' && customArgs) {
+              comment += `
+            - **Type**: Custom demo (additional)
+            - **Arguments**: \`${customArgs}\`
+            - **Generated with**: \`web-indexer ${customArgs}\`
+            - **Note**: This is generated *in addition* to all config-based theme demos
+            `;
+            } else {
+              comment += `
+            - **Type**: All themes showcase
+            - **Themes**: Default, Solarized, Nord, Dracula
+            - **Features**: Recursive indexing, responsive design, dark mode
+            `;
+            }
+
+            comment += `
+            ### 🧪 Available Commands
+            - \`/demo\` or \`/demo themes\` - Generate all themes demo
+            - \`/demo --args "custom arguments"\` - Generate custom demo *in addition* to themes
+            - \`/demo cleanup\` - Clean up resources
+
+            ### 📖 Example Custom Commands
+            - \`/demo --args "--theme nord --title 'My Custom Index'"\`
+            - \`/demo --args "--theme dracula --minify --sort-by last_modified"\`
+            - \`/demo --args "custom-demo:--theme nord --title 'Demo 1';minimal:--theme default --no-breadcrumbs"\`
+
             ---
             *Preview will be automatically cleaned up when this PR is closed, or when the preview label is removed by the repo owner*`;
 
@@ -529,6 +600,7 @@ jobs:
       - name: Generate manual demo
         run: |
           DEMO_TYPE="${{ github.event.inputs.demo_type }}"
+          CUSTOM_DEMOS="${{ github.event.inputs.custom_demos }}"
 
           if [[ -n "${{ github.event.inputs.pr_number }}" ]]; then
             export DEMO_S3_BUCKET="joshbeard-web-indexer-demo-pr${{ github.event.inputs.pr_number }}"
@@ -539,8 +611,17 @@ jobs:
           echo "🚀 Generating manual demo..."
           echo "  Type: $DEMO_TYPE"
           echo "  Bucket: $DEMO_S3_BUCKET"
+          echo "  Custom demos: $CUSTOM_DEMOS"
 
-          ./scripts/demo.sh $DEMO_TYPE
+          cd demo
+
+          if [[ -n "$CUSTOM_DEMOS" ]]; then
+            echo "🎯 Generating with custom demos: $CUSTOM_DEMOS"
+            make demo-s3 CUSTOM_DEMOS="$CUSTOM_DEMOS"
+          else
+            echo "🎯 Generating standard config-based demos"
+            make demo-s3
+          fi
 
       - name: Upload manual demo artifacts
         uses: actions/upload-artifact@v4
