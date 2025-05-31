@@ -178,31 +178,26 @@ jobs:
           AWS_REGION: 'us-east-1'
 ```
 
-Example of using this more manually, such as with a private runner with a
-volume mounted from outside the workspace. This example expects a
-`.web-indexer.yml` config to exist in the repository's root and is passing in
-the AWS variables for an S3 target:
+### PR Preview System
 
-```yaml
-jobs:
-  build:
-    runs-on: self-hosted
-    steps:
-      - name: Web Index Generator
-        run: |
-          docker run --rm \
-            -v /mnt/repos:/mnt/repos \
-            -v ${PWD}:/workspace \
-            -w /workspace \
-            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-            -e AWS_REGION='us-east-1' \
-            -e CONFIG=.web-indexer.yml \
-            ghcr.io/joshbeard/web-indexer/web-indexer:latest
+The repository includes an automated PR preview system that generates live S3-hosted demos. **Requires manual approval from repository maintainers** using GitHub environment protection.
+
+#### Commands
+
+Comment on pull requests with:
+
+- `/demo` - Generate all theme demos
+- `/demo --args "custom arguments"` - Generate themes + custom demo
+- `/demo cleanup` - Clean up resources
+
+#### Examples
+
+```bash
+/demo --args "--theme nord --title 'My Custom Index'"
+/demo --args "--theme dracula --minify --sort-by last_modified"
 ```
 
-Refer to the [`action.yml`](action.yml) for all available inputs, which
-correspond to the CLI arguments and configuration parameters.
+The system generates live demos with S3 as both source and target, demonstrating real S3-to-S3 indexing capabilities.
 
 ## GitLab CI
 

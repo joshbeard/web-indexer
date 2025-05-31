@@ -1,3 +1,4 @@
+web-indexer
 dist
 *.zip
 *.tar.gz
@@ -8,3 +9,8 @@ coverage.txt
 coverage.html
 coverage.xml
 checkstyle-report.xml
+
+# Demo files
+demo/data
+demo/output
+demo/.demo-buckets.json

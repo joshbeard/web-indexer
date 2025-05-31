@@ -10,26 +10,32 @@ help: ## Shows this help
 ## Linting ##
 .PHONY: modverify
 modverify: ## Runs 'go mod verify'
+	@echo "Checking module verification (go mod verify)..."
 	@go mod verify
 
 .PHONY: vet
 vet: ## Runs 'go vet'
+	@echo "Checking linting (go vet)..."
 	@go vet ./...
 
 .PHONY: gofumpt
 gofumpt: vet ## Check linting with 'gofumpt'
+	@echo "Checking linting (gofumpt)..."
 	@go run mvdan.cc/gofumpt -l -d .
 
 .PHONY: lines
 lines: ## Check long lines.
+	@echo "Checking long lines..."
 	@go run github.com/segmentio/golines -m 120 --dry-run internal/webindexer/*.go
 
 .PHONY: lines-fix
 lines-fix: lines ## Fix long lines
+	@echo "Fixing long lines..."
 	@go run github.com/segmentio/golines -m 120 -w internal/webindexer/*.go
 
 .PHONY: golangci-lint
 golangci-lint: ## Lint using 'golangci-lint'
+	@echo "Checking linting (golangci-lint)..."
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint \
 	run --timeout=300s --out-format checkstyle ./... 2>&1 | tee checkstyle-report.xml
 
