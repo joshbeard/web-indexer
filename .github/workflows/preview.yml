@@ -40,6 +40,7 @@ jobs:
   # Security check - only allow authorized users
   security-check:
     runs-on: ubuntu-latest
+    # Only run for PR events, issue comments on PRs, or manual workflow dispatch
     if: |
       (github.event_name == 'pull_request' &&
        ((github.event.action == 'labeled' && (github.event.label.name == 'demo' || github.event.label.name == 'dev-build')) ||
@@ -47,7 +48,8 @@ jobs:
         (github.event.action == 'closed'))) ||
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != null &&
-       (startsWith(github.event.comment.body, '/demo') || startsWith(github.event.comment.body, '/build')))
+       (startsWith(github.event.comment.body, '/demo') || startsWith(github.event.comment.body, '/build'))) ||
+      github.event_name == 'workflow_dispatch'
     environment: preview-pr  # Protected environment requiring approval
     outputs:
       authorized: ${{ steps.check.outputs.authorized }}
@@ -92,7 +94,11 @@ jobs:
           elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
             # Check for demo commands in comments (only on pull requests)
             echo "🔍 Processing issue_comment event:"
-            echo "  Issue type: ${{ github.event.issue.pull_request && 'pull_request' || 'issue' }}"
+            if [[ "${{ github.event.issue.pull_request }}" != "null" ]]; then
+              echo "  Issue type: pull_request"
+            else
+              echo "  Issue type: issue"
+            fi
             echo "  Comment body: '${{ github.event.comment.body }}'"
 
             if [[ "${{ github.event.issue.pull_request }}" != "null" ]]; then
@@ -128,6 +134,10 @@ jobs:
             else
               echo "  ❌ Comment is on an issue, not a pull request"
             fi
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            should_generate=true
+            demo_variant="manual"
+            echo "  ✅ Manual workflow dispatch triggered"
           fi
 
           echo "should_generate=$should_generate" >> $GITHUB_OUTPUT
