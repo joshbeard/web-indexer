@@ -1,6 +1,8 @@
-# Web-Indexer Demo System
+# Web-Indexer Demo Tool
 
 Generate live demonstrations of web-indexer with multiple themes and configurations.
+
+This system is mainly intended for generating dynamic previews from pull requests.
 
 ## Quick Start
 
