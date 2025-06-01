@@ -178,27 +178,6 @@ jobs:
           AWS_REGION: 'us-east-1'
 ```
 
-### PR Preview System
-
-The repository includes an automated PR preview system that generates live S3-hosted demos. **Requires manual approval from repository maintainers** using GitHub environment protection.
-
-#### Commands
-
-Comment on pull requests with:
-
-- `/demo` - Generate all theme demos
-- `/demo --args "custom arguments"` - Generate themes + custom demo
-- `/demo cleanup` - Clean up resources
-
-#### Examples
-
-```bash
-/demo --args "--theme nord --title 'My Custom Index'"
-/demo --args "--theme dracula --minify --sort-by last_modified"
-```
-
-The system generates live demos with S3 as both source and target, demonstrating real S3-to-S3 indexing capabilities.
-
 ## GitLab CI
 
 ```yaml
