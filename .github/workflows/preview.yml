@@ -248,16 +248,14 @@ jobs:
       - name: Generate demo
         env:
           DEMO_S3_BUCKET: ${{ steps.params.outputs.bucket_name }}
+          DEMO_VARIANT: ${{ needs.security-check.outputs.demo_variant }}
+          CUSTOM_ARGS: ${{ needs.security-check.outputs.custom_args }}
         run: |
           echo "🚀 Generating demo..."
           echo "  Type: ${{ steps.params.outputs.demo_type }}"
           echo "  Bucket: $DEMO_S3_BUCKET"
-          echo "  Variant: ${{ needs.security-check.outputs.demo_variant }}"
-          echo "  Custom args: ${{ needs.security-check.outputs.custom_args }}"
-
-          # Determine demo generation approach
-          DEMO_VARIANT="${{ needs.security-check.outputs.demo_variant }}"
-          CUSTOM_ARGS="${{ needs.security-check.outputs.custom_args }}"
+          echo "  Variant: $DEMO_VARIANT"
+          echo "  Custom args: $CUSTOM_ARGS"
 
           # Check for custom demos from workflow dispatch
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.custom_demos }}" ]]; then
