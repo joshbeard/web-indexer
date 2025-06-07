@@ -2,91 +2,43 @@
 // Used by preview workflow for consistent comment formatting
 
 /**
- * Generate web-indexer preview status comment body
+ * Generate minimal web-indexer preview status comment
  */
 function getDeploymentStatusComment(status, options = {}) {
   const {
-    command = '/preview',
-    commentUser,
-    approver,
-    customArgs,
-    runUrl,
     isCleanup = false,
-    s3Url,
-    bucketName
+    s3Url
   } = options;
 
-  const emoji = isCleanup ? '🧹' : '🗂️';
-  const action = isCleanup ? 'Cleanup' : 'Web-Indexer Preview';
-
-  let body = `## ${emoji} ${action} Status\n\n` +
-             `**Command:** \`${command}\`\n` +
-             `**Requested by:** @${commentUser}\n`;
-
-  if (approver) {
-    body += `**Approved by:** @${approver}\n`;
-  }
-
-  body += `**Status:** ${getStatusEmoji(status)} ${getStatusText(status, isCleanup)}\n\n`;
+  const cleanupEmoji = '🧹';
+  const previewEmoji = '🗂️';
 
   switch (status) {
     case 'queuing':
-      body += `🔄 Queuing ${isCleanup ? 'cleanup' : 'preview generation'} request...\n\n`;
-      break;
+      return `${isCleanup ? cleanupEmoji : previewEmoji} ${isCleanup ? 'Cleanup' : 'Preview'} generating...`;
 
     case 'pending':
-      body += `🔒 Waiting for authorized reviewer to approve this ${isCleanup ? 'cleanup' : 'preview generation'}...\n\n`;
-      break;
+      return `⏳ ${isCleanup ? 'Cleanup' : 'Preview'} awaiting approval...`;
 
     case 'running':
-      body += `⚡ ${action} is now running with full access to AWS resources\n\n`;
-      break;
+      return `⚡ ${isCleanup ? 'Cleanup' : 'Preview'} approved, running...`;
 
     case 'success':
-      body += `🎉 **${action} Complete!**\n`;
-
-      if (!isCleanup) {
-        body += `- **Live Preview:** [${s3Url}](${s3Url})\n` +
-                `- **S3 Bucket:** \`${bucketName}\`\n` +
-                `- **Arguments:** \`${customArgs || '(all themes)'}\`\n` +
-                `- **Artifacts:** [Download results](${runUrl})\n` +
-                `- **Logs:** [View workflow details](${runUrl})\n\n` +
-                `**Preview includes:**\n` +
-                `✅ Responsive web-indexer interface\n` +
-                `✅ All configured themes (Default, Solarized, Nord, Dracula)\n` +
-                `✅ Recursive directory indexing\n` +
-                `✅ Dark mode support\n\n`;
+      if (isCleanup) {
+        return `✅ Preview environment cleaned up`;
       } else {
-        body += `- **S3 Bucket:** \`${bucketName}\` (removed)\n` +
-                `- **Logs:** [View cleanup details](${runUrl})\n\n` +
-                `**Cleanup completed:**\n` +
-                `✅ S3 bucket and all objects removed\n` +
-                `✅ Preview environment resources cleaned up\n` +
-                `✅ Temporary artifacts removed\n\n`;
+        return `✅ Preview ready: [View Demo](${s3Url})`;
       }
-      break;
 
     case 'failure':
-      body += `🚨 **${action} Error**\n` +
-              `The ${isCleanup ? 'cleanup' : 'preview generation'} encountered an error during execution.\n\n` +
-              `- **Arguments:** \`${customArgs || '(default)'}\`\n` +
-              `- **Error Logs:** [View workflow details](${runUrl})\n` +
-              `- **Debug Info:** Check the workflow logs for detailed error information\n\n`;
-      break;
+      return `❌ ${isCleanup ? 'Cleanup' : 'Preview'} failed`;
 
     case 'cancelled':
-      body += `🚫 **${action} Not Approved**\n` +
-              `The ${isCleanup ? 'cleanup' : 'preview generation'} was either:\n` +
-              `- Rejected by an authorized reviewer\n` +
-              `- Cancelled before approval\n` +
-              `- Timed out waiting for approval\n\n` +
-              `To retry, post the command again in a new comment.\n\n`;
-      break;
+      return `🚫 ${isCleanup ? 'Cleanup' : 'Preview'} not approved`;
+
+    default:
+      return `❓ ${isCleanup ? 'Cleanup' : 'Preview'} status unknown`;
   }
-
-  body += `---\n` + getFooterText(status, isCleanup);
-
-  return body;
 }
 
 /**

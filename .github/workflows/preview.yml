@@ -34,8 +34,12 @@ jobs:
       pr_number: ${{ steps.parse.outputs.pr_number }}
       cleanup_only: ${{ steps.parse.outputs.cleanup_only }}
       comment_user: ${{ steps.parse.outputs.comment_user }}
+      status_comment_id: ${{ steps.create-comment.outputs.result }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Parse comment
         id: parse
         env:
@@ -69,6 +73,23 @@ jobs:
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "comment_user=$COMMENT_USER" >> $GITHUB_OUTPUT
 
+      - name: Create initial status comment
+        id: create-comment
+        if: steps.parse.outputs.should_run == 'true' || steps.parse.outputs.cleanup_only == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { handleInitialComment } = require('./.github/workflows/preview-automation/workflow-actions.js');
+            return await handleInitialComment(github, context, core, ${{ toJSON(steps.parse.outputs) }});
+
+      - name: Update comment for pending approval
+        if: steps.parse.outputs.should_run == 'true' || steps.parse.outputs.cleanup_only == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { handlePendingApproval } = require('./.github/workflows/preview-automation/workflow-actions.js');
+            await handlePendingApproval(github, context, ${{ steps.create-comment.outputs.result }}, ${{ toJSON(steps.parse.outputs) }});
+
   generate:
     name: "Generate Web-Indexer Preview"
     runs-on: ubuntu-latest
@@ -83,6 +104,7 @@ jobs:
       CUSTOM_ARGS: ${{ needs.parse-comment.outputs.custom_args }}
       PR_NUMBER: ${{ needs.parse-comment.outputs.pr_number }}
       COMMENT_USER: ${{ needs.parse-comment.outputs.comment_user }}
+      STATUS_COMMENT_ID: ${{ needs.parse-comment.outputs.status_comment_id }}
       GITHUB_ACTOR: ${{ github.actor }}
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_RUN_ID: ${{ github.run_id }}
@@ -90,6 +112,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Update comment - preview starting
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { handlePreviewStarting } = require('./.github/workflows/preview-automation/workflow-actions.js');
+            await handlePreviewStarting(github, context, process.env);
 
       - name: Show preview request details
         run: |
@@ -154,29 +183,24 @@ jobs:
           path: demo/output/
           retention-days: 30
 
-      - name: Comment on PR with preview links
+      - name: Update comment - preview success
         if: success()
-        uses: actions/github-script@v7
         env:
           S3_URL: ${{ steps.params.outputs.s3_url }}
           BUCKET_NAME: ${{ steps.params.outputs.bucket_name }}
+        uses: actions/github-script@v7
         with:
           script: |
-            const prNumber = ${{ env.PR_NUMBER }};
-            const bucketName = process.env.BUCKET_NAME;
-            const s3Url = process.env.S3_URL;
+            const { handlePreviewSuccess } = require('./.github/workflows/preview-automation/workflow-actions.js');
+            await handlePreviewSuccess(github, context, process.env);
 
-            let comment = `A live demo has been generated for this pull request: **[Preview on S3](${s3Url})**
-
-            ---
-            *Preview will be automatically cleaned up when this PR is closed*`;
-
-            github.rest.issues.createComment({
-              issue_number: prNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+      - name: Update comment - preview failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { handlePreviewFailure } = require('./.github/workflows/preview-automation/workflow-actions.js');
+            await handlePreviewFailure(github, context, process.env);
 
   auto-cleanup:
     name: "Auto Cleanup on PR Close/Merge"
@@ -246,7 +270,7 @@ jobs:
             const prNumber = ${{ env.PR_NUMBER }};
             const bucketName = process.env.BUCKET_NAME;
 
-            const comment = `The preview deployment has been destroyed`;
+            const comment = `✅ Preview environment cleaned up`;
 
             github.rest.issues.createComment({
               issue_number: prNumber,
@@ -265,6 +289,7 @@ jobs:
     env:
       PR_NUMBER: ${{ needs.parse-comment.outputs.pr_number }}
       COMMENT_USER: ${{ needs.parse-comment.outputs.comment_user }}
+      STATUS_COMMENT_ID: ${{ needs.parse-comment.outputs.status_comment_id }}
       GITHUB_ACTOR: ${{ github.actor }}
       GITHUB_REPOSITORY: ${{ github.repository }}
       GITHUB_RUN_ID: ${{ github.run_id }}
@@ -279,6 +304,13 @@ jobs:
           aws-access-key-id: ${{ secrets.DEMO_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DEMO_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
+      - name: Update comment - cleanup starting
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { handleCleanupStarting } = require('./.github/workflows/preview-automation/workflow-actions.js');
+            await handleCleanupStarting(github, context, process.env);
 
       - name: Show cleanup request details
         run: |
@@ -313,28 +345,15 @@ jobs:
 
           echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
 
-      - name: Comment on manual cleanup result
+      - name: Update comment - cleanup result
         if: always()
-        uses: actions/github-script@v7
         env:
           BUCKET_NAME: ${{ steps.cleanup.outputs.bucket_name }}
+        uses: actions/github-script@v7
         with:
           script: |
-            const prNumber = ${{ env.PR_NUMBER }};
-            const bucketName = process.env.BUCKET_NAME;
-            const jobStatus = '${{ job.status }}';
-            const success = jobStatus === 'success';
-
-            const comment = `The preview deployment has been destroyed`;
-
-            ${success ? '🎉 **Cleanup Complete!**' : '🚨 **Cleanup Error**'}`;
-
-            github.rest.issues.createComment({
-              issue_number: prNumber,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
+            const { handleCleanupResult } = require('./.github/workflows/preview-automation/workflow-actions.js');
+            await handleCleanupResult(github, context, process.env, '${{ job.status }}');
 
   manual-test:
     name: "Manual Test"
