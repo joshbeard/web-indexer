@@ -165,41 +165,8 @@ jobs:
             const prNumber = ${{ env.PR_NUMBER }};
             const bucketName = process.env.BUCKET_NAME;
             const s3Url = process.env.S3_URL;
-            const customArgs = process.env.CUSTOM_ARGS || '';
 
-            let comment = `## 🗂️ Web-Indexer Preview
-
-            A live demo has been generated for this pull request:
-
-            **🌐 [Preview on S3](${s3Url})**
-
-            ### 🎯 Demo Configuration`;
-
-            if (customArgs.trim()) {
-              comment += `
-            - **Type**: Custom demo (additional)
-            - **Arguments**: \`${customArgs}\`
-            - **Generated with**: \`web-indexer ${customArgs}\`
-            - **Note**: This is generated *in addition* to all config-based theme demos
-            `;
-            } else {
-              comment += `
-            - **Type**: All themes showcase
-            - **Themes**: Default, Solarized, Nord, Dracula
-            - **Features**: Recursive indexing, responsive design, dark mode
-            `;
-            }
-
-            comment += `
-
-            ### 🧪 Available Commands
-            - \`/preview\` - Generate all themes demo
-            - \`/preview <args>\` - Generate custom demo *in addition* to themes
-            - \`/preview cleanup\` - Clean up resources
-
-            ### 📖 Example Custom Commands
-            - \`/preview --theme nord --title "My Custom Index"\`
-            - \`/preview --theme dracula --minify --sort-by last_modified\`
+            let comment = `A live demo has been generated for this pull request: **[Preview on S3](${s3Url})**
 
             ---
             *Preview will be automatically cleaned up when this PR is closed*`;
@@ -278,24 +245,8 @@ jobs:
           script: |
             const prNumber = ${{ env.PR_NUMBER }};
             const bucketName = process.env.BUCKET_NAME;
-            const wasMerged = ${{ env.PR_MERGED }};
 
-            const comment = `## 🧹 Web-Indexer Preview Cleanup
-
-            **Trigger:** PR ${wasMerged ? 'merged' : 'closed'}
-            **Status:** ✅ Preview environment automatically cleaned up
-
-            🎉 **Cleanup Complete!**
-            - **S3 Bucket:** \`${bucketName}\` (removed)
-            - **Preview URL:** No longer accessible
-
-            **Auto-cleanup verified:**
-            ✅ S3 bucket and all objects removed
-            ✅ Preview environment resources cleaned up
-            ✅ Temporary artifacts removed
-
-            ---
-            *Cleanup completed automatically on PR ${wasMerged ? 'merge' : 'close'}*`;
+            const comment = `The preview deployment has been destroyed`;
 
             github.rest.issues.createComment({
               issue_number: prNumber,
@@ -374,21 +325,9 @@ jobs:
             const jobStatus = '${{ job.status }}';
             const success = jobStatus === 'success';
 
-            const comment = `## 🧹 Manual Cleanup ${success ? 'Complete' : 'Failed'}
+            const comment = `The preview deployment has been destroyed`;
 
-            **Requested by:** @${{ env.COMMENT_USER }}
-            **Status:** ${success ? '✅' : '❌'} Manual cleanup ${success ? 'completed' : 'failed'}
-
-            ${success ? '🎉 **Cleanup Complete!**' : '🚨 **Cleanup Error**'}
-            - **S3 Bucket:** \`${bucketName}\` ${success ? '(removed)' : '(check logs for details)'}
-            ${success ? '- **Preview URL:** No longer accessible' : '- **Error:** Check workflow logs for details'}
-
-            ${success ? `**Cleanup verified:**
-            ✅ S3 bucket and all objects removed
-            ✅ Preview environment resources cleaned up` : ''}
-
-            ---
-            *Manual cleanup ${success ? 'completed successfully' : 'failed - check logs for details'}*`;
+            ${success ? '🎉 **Cleanup Complete!**' : '🚨 **Cleanup Error**'}`;
 
             github.rest.issues.createComment({
               issue_number: prNumber,
