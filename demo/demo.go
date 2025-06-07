@@ -1049,10 +1049,10 @@ func generateAndUploadS3IndexPageWithPrefix(config *DemoConfig, prefix string) e
 	var title string
 	if releaseVersion != "" {
 		title = fmt.Sprintf("Web-Indexer Release Preview - v%s", releaseVersion)
-		description = fmt.Sprintf("Web-indexer generates beautiful, themeable directory listings for local filesystems and S3 buckets. This is the release preview for version %s showing all available themes.", releaseVersion)
+		description = fmt.Sprintf("This is the release preview for version %s", releaseVersion)
 	} else {
 		title = fmt.Sprintf("%s - Release Preview", config.Config.Demo.Title)
-		description = fmt.Sprintf("%s. This is the release preview showing web-indexer with S3 as both source and target.", config.Config.Demo.Description)
+		description = config.Config.Demo.Description
 	}
 
 	// Create S3 demo index page locally

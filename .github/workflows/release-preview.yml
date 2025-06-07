@@ -16,7 +16,6 @@ jobs:
 
     env:
       GOTOOLCHAIN: auto
-      PREVIEW_S3_PREFIX: preview
       AWS_REGION: us-east-1
 
     steps:
@@ -48,18 +47,16 @@ jobs:
           echo "🚀 RELEASE PREVIEW DEPLOYMENT (MAIN BRANCH)"
           echo "📦 Version: ${{ steps.get_version.outputs.VERSION }}"
           echo "🪣 S3 Bucket: ${{ secrets.S3_BUCKET_NAME }}"
-          echo "📂 S3 Prefix: $PREVIEW_S3_PREFIX"
           echo "🌍 Region: $AWS_REGION"
-          echo "🔗 Preview URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/$PREVIEW_S3_PREFIX/"
+          echo "🔗 Preview URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/"
 
       - name: Generate release preview
         env:
           DEMO_S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
-          DEMO_S3_PREFIX: ${{ env.PREVIEW_S3_PREFIX }}
           RELEASE_VERSION: ${{ steps.get_version.outputs.VERSION }}
         run: |
           echo "🚀 Generating release preview for version $RELEASE_VERSION..."
-          echo "  Target: s3://$DEMO_S3_BUCKET/$DEMO_S3_PREFIX/"
+          echo "  Target: s3://$DEMO_S3_BUCKET"
           echo "  Source: main branch (testing mode)"
 
           cd demo
@@ -75,7 +72,7 @@ jobs:
       - name: Deployment summary
         env:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
-          PREVIEW_URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/${{ env.PREVIEW_S3_PREFIX }}/
+          PREVIEW_URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/
         run: |
           echo "✅ Release preview deployment completed!"
           echo ""
