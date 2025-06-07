@@ -45,12 +45,7 @@ demo-s3-release: ## Generate S3 demo for release preview
 		echo "❌ DEMO_S3_BUCKET environment variable is required"; \
 		exit 1; \
 	fi
-	@if [ -z "$(DEMO_S3_PREFIX)" ]; then \
-		echo "❌ DEMO_S3_PREFIX environment variable is required"; \
-		exit 1; \
-	fi
 	@echo "  Target bucket: $(DEMO_S3_BUCKET)"
-	@echo "  Target prefix: $(DEMO_S3_PREFIX)"
 	@echo "  Release version: $(RELEASE_VERSION)"
 	go run demo.go -type s3-release
 
