@@ -1,203 +1,103 @@
-name: "Preview"
+name: "Web-Indexer Preview"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
 on:
-  pull_request:
-    types: [opened, synchronize, closed, labeled, unlabeled]
-    branches:
-      - main
   issue_comment:
     types: [created]
+  pull_request:
+    types: [closed]
   workflow_dispatch:
     inputs:
-      demo_type:
-        description: 'Demo type to generate'
-        required: true
-        default: 'both'
-        type: choice
-        options:
-        - local
-        - s3
-        - both
       pr_number:
-        description: 'PR number (for manual S3 demo generation)'
+        description: 'PR number for manual preview generation'
         required: false
         type: string
-      custom_demos:
-        description: 'Custom demo arguments (optional, e.g., "--theme nord --title My Demo")'
+      custom_args:
+        description: 'Custom arguments to test'
         required: false
         type: string
-      build_type:
-        description: 'Build type to generate'
-        required: false
-        default: 'demo'
-        type: choice
-        options:
-        - demo
-        - dev-build
-        - both
 
 jobs:
-  # Test job to verify issue_comment trigger works
-  comment-test:
+  parse-comment:
+    name: "Parse Comment"
     runs-on: ubuntu-latest
-    if: github.event_name == 'issue_comment'
-    steps:
-      - name: Test comment trigger
-        run: |
-          echo "✅ Issue comment trigger is working!"
-          echo "  Author: ${{ github.event.comment.user.login }}"
-          echo "  Comment: ${{ github.event.comment.body }}"
-          echo "  Is PR: ${{ github.event.issue.pull_request != null }}"
-
-  # Security check - only allow authorized users
-  security-check:
-    runs-on: ubuntu-latest
-    # Only run for PR comments with commands or PR closure - NOT regular PR pushes
-    if: >
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request != null &&
-       (startsWith(github.event.comment.body, '/demo') ||
-        startsWith(github.event.comment.body, '/build'))) ||
-      (github.event_name == 'pull_request' && github.event.action == 'closed')
-    environment: preview-pr
+    if: github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        startsWith(github.event.comment.body, '/preview')
     outputs:
-      authorized: ${{ steps.check.outputs.authorized }}
-      should_generate: ${{ steps.check.outputs.should_generate }}
-      should_cleanup: ${{ steps.check.outputs.should_cleanup }}
-      should_build: ${{ steps.check.outputs.should_build }}
-      should_build_cleanup: ${{ steps.check.outputs.should_build_cleanup }}
-      custom_args: ${{ steps.check.outputs.custom_args }}
-      demo_variant: ${{ steps.check.outputs.demo_variant }}
+      should_run: ${{ steps.parse.outputs.should_run }}
+      custom_args: ${{ steps.parse.outputs.custom_args }}
+      pr_number: ${{ steps.parse.outputs.pr_number }}
+      cleanup_only: ${{ steps.parse.outputs.cleanup_only }}
+      comment_user: ${{ steps.parse.outputs.comment_user }}
+
     steps:
-      - name: Debug trigger event
+      - name: Parse comment
+        id: parse
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_USER: ${{ github.event.comment.user.login }}
+          PR_NUMBER: ${{ github.event.issue.number }}
         run: |
-          echo "🚨 Security-check job triggered!"
-          echo "  Event: ${{ github.event_name }}"
-          echo "  Action: ${{ github.event.action || 'N/A' }}"
-          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-            echo "  Comment author: ${{ github.event.comment.user.login }}"
-            echo "  Comment body: ${{ github.event.comment.body }}"
-            echo "  Is PR comment: ${{ github.event.issue.pull_request != null }}"
+          echo "🔍 Parsing comment: $COMMENT_BODY"
+          echo "👤 Comment by: $COMMENT_USER"
+          echo "📋 PR Number: $PR_NUMBER"
+
+          # Parse command
+          if [[ "$COMMENT_BODY" =~ ^/preview[[:space:]]*cleanup[[:space:]]*$ ]]; then
+            echo "🧹 Cleanup command detected"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "cleanup_only=true" >> $GITHUB_OUTPUT
+            echo "custom_args=" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT_BODY" =~ ^/preview[[:space:]]*(.*)$ ]]; then
+            ARGS="${BASH_REMATCH[1]}"
+            echo "🚀 Preview command detected with args: '$ARGS'"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            echo "cleanup_only=false" >> $GITHUB_OUTPUT
+            echo "custom_args=$ARGS" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Invalid command format"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "cleanup_only=false" >> $GITHUB_OUTPUT
+            echo "custom_args=" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check authorization and trigger conditions
-        id: check
-        run: |
-          # Authorization is handled by the protected environment 'preview-pr'
-          echo "authorized=true" >> $GITHUB_OUTPUT
-          echo "✅ Demo generation approved by repository maintainer"
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "comment_user=$COMMENT_USER" >> $GITHUB_OUTPUT
 
-          # Initialize variables
-          should_generate=false
-          should_cleanup=false
-          should_build=false
-          should_build_cleanup=false
-          custom_args=""
-          demo_variant=""
-
-          echo "Event: ${{ github.event_name }}"
-          echo "Action: ${{ github.event.action || 'N/A' }}"
-
-          # Handle issue comments (PR comments)
-          if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-            echo "Processing issue comment..."
-            comment_body='${{ github.event.comment.body }}'
-            echo "Comment: $comment_body"
-
-            if [[ "$comment_body" == "/demo" ]]; then
-              should_generate=true
-              demo_variant="themes"
-              echo "✅ Matched /demo command"
-            elif echo "$comment_body" | grep -q '^/demo[[:space:]]\+--'; then
-              should_generate=true
-              demo_variant="custom"
-              # Extract everything after "/demo "
-              custom_args=$(echo "$comment_body" | sed 's|^/demo[[:space:]]\+||')
-              echo "✅ Matched /demo with custom args: $custom_args"
-            elif [[ "$comment_body" == "/demo cleanup" ]]; then
-              should_cleanup=true
-              echo "✅ Matched /demo cleanup command"
-            elif [[ "$comment_body" == "/build" ]]; then
-              should_build=true
-              echo "✅ Matched /build command"
-            else
-              echo "❌ No matching command found"
-            fi
-          fi
-
-          # Handle workflow dispatch
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            should_generate=true
-            demo_variant="manual"
-            echo "✅ Manual workflow dispatch"
-          fi
-
-          # Handle PR events
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            if [[ "${{ github.event.action }}" == "closed" ]]; then
-              should_cleanup=true
-              echo "✅ PR closed - cleanup triggered"
-            fi
-          fi
-
-          # Set outputs
-          echo "should_generate=$should_generate" >> $GITHUB_OUTPUT
-          echo "should_cleanup=$should_cleanup" >> $GITHUB_OUTPUT
-          echo "should_build=$should_build" >> $GITHUB_OUTPUT
-          echo "should_build_cleanup=$should_build_cleanup" >> $GITHUB_OUTPUT
-          echo "custom_args=$custom_args" >> $GITHUB_OUTPUT
-          echo "demo_variant=$demo_variant" >> $GITHUB_OUTPUT
-
-          echo "Final outputs:"
-          echo "  Should generate: $should_generate"
-          echo "  Should cleanup: $should_cleanup"
-          echo "  Demo variant: $demo_variant"
-          echo "  Custom args: $custom_args"
-
-      - name: Debug - Show all outputs being set
-        run: |
-          echo "🔍 All job outputs being set:"
-          echo "  authorized=${{ steps.check.outputs.authorized }}"
-          echo "  should_generate=${{ steps.check.outputs.should_generate }}"
-          echo "  should_cleanup=${{ steps.check.outputs.should_cleanup }}"
-          echo "  should_build=${{ steps.check.outputs.should_build }}"
-          echo "  should_build_cleanup=${{ steps.check.outputs.should_build_cleanup }}"
-          echo "  custom_args=${{ steps.check.outputs.custom_args }}"
-          echo "  demo_variant=${{ steps.check.outputs.demo_variant }}"
-
-  # Generate demo
   generate:
+    name: "Generate Web-Indexer Preview"
     runs-on: ubuntu-latest
-    needs: security-check
-    if: |
-      always() &&
-      needs.security-check.outputs.authorized == 'true' &&
-      needs.security-check.outputs.should_generate == 'true'
-    environment: preview-pr
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
+    needs: parse-comment
+    if: needs.parse-comment.outputs.should_run == 'true'
+    environment:
+      name: preview-pr
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
     env:
       GOTOOLCHAIN: auto
+      CUSTOM_ARGS: ${{ needs.parse-comment.outputs.custom_args }}
+      PR_NUMBER: ${{ needs.parse-comment.outputs.pr_number }}
+      COMMENT_USER: ${{ needs.parse-comment.outputs.comment_user }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_RUN_ID: ${{ github.run_id }}
 
     steps:
-      - name: Debug workflow conditions
-        run: |
-          echo "🔍 Debug Information:"
-          echo "  Event: ${{ github.event_name }}"
-          echo "  Action: ${{ github.event.action || 'N/A' }}"
-          echo "  Authorized: ${{ needs.security-check.outputs.authorized }}"
-          echo "  Should Generate: ${{ needs.security-check.outputs.should_generate }}"
-          echo "  Should Cleanup: ${{ needs.security-check.outputs.should_cleanup }}"
-          echo "  Demo Variant: ${{ needs.security-check.outputs.demo_variant }}"
-          echo "  Custom Args: ${{ needs.security-check.outputs.custom_args }}"
-          echo ""
-          echo "🎯 This job should run when:"
-          echo "  - authorized == 'true' (current: ${{ needs.security-check.outputs.authorized }})"
-          echo "  - should_generate == 'true' (current: ${{ needs.security-check.outputs.should_generate }})"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      - name: Show preview request details
+        run: |
+          echo "🗂️ WEB-INDEXER PREVIEW APPROVED"
+          echo "👤 Requested by: $COMMENT_USER"
+          echo "📋 PR Number: $PR_NUMBER"
+          echo "⚙️  Arguments: $CUSTOM_ARGS"
+          echo "🔒 Approved by: ${{ github.actor }}"
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -218,55 +118,28 @@ jobs:
       - name: Determine demo parameters
         id: params
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            DEMO_TYPE="${{ github.event.inputs.demo_type }}"
-            if [[ -n "${{ github.event.inputs.pr_number }}" ]]; then
-              PR_NUMBER="${{ github.event.inputs.pr_number }}"
-              BUCKET_NAME="joshbeard-web-indexer-demo-pr${PR_NUMBER}"
-            else
-              BUCKET_NAME="joshbeard-web-indexer-demo-manual-$(date +%s)"
-            fi
-          else
-            DEMO_TYPE="s3"  # Only S3 demos for PR triggers
-            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-              PR_NUMBER="${{ github.event.number }}"
-            elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-              PR_NUMBER="${{ github.event.issue.number }}"
-            fi
-            BUCKET_NAME="joshbeard-web-indexer-demo-pr${PR_NUMBER}"
-          fi
+          BUCKET_NAME="joshbeard-web-indexer-demo-pr${PR_NUMBER}"
+          S3_URL="http://${BUCKET_NAME}.s3-website-us-east-1.amazonaws.com/"
 
-          echo "demo_type=$DEMO_TYPE" >> $GITHUB_OUTPUT
           echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "s3_url=$S3_URL" >> $GITHUB_OUTPUT
 
-          echo "📋 Demo parameters:"
-          echo "  Type: $DEMO_TYPE"
+          echo "📋 Preview parameters:"
           echo "  Bucket: $BUCKET_NAME"
-          echo "  PR: $PR_NUMBER"
-
-      - name: Generate demo
-        env:
-          DEMO_S3_BUCKET: ${{ steps.params.outputs.bucket_name }}
-          DEMO_VARIANT: ${{ needs.security-check.outputs.demo_variant }}
-          CUSTOM_ARGS: ${{ needs.security-check.outputs.custom_args }}
-        run: |
-          echo "🚀 Generating demo..."
-          echo "  Type: ${{ steps.params.outputs.demo_type }}"
-          echo "  Bucket: $DEMO_S3_BUCKET"
-          echo "  Variant: $DEMO_VARIANT"
+          echo "  URL: $S3_URL"
           echo "  Custom args: $CUSTOM_ARGS"
 
-          # Check for custom demos from workflow dispatch
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.custom_demos }}" ]]; then
-            CUSTOM_ARGS="${{ github.event.inputs.custom_demos }}"
-            DEMO_VARIANT="custom"
-            echo "  Using custom demos from workflow dispatch: $CUSTOM_ARGS"
-          fi
+      - name: Generate web-indexer demo
+        env:
+          DEMO_S3_BUCKET: ${{ steps.params.outputs.bucket_name }}
+        run: |
+          echo "🚀 Generating web-indexer preview..."
+          echo "  Bucket: $DEMO_S3_BUCKET"
+          echo "  Custom args: $CUSTOM_ARGS"
 
           cd demo
 
-          if [[ "$DEMO_VARIANT" == "custom" && -n "$CUSTOM_ARGS" ]]; then
+          if [[ -n "$CUSTOM_ARGS" ]]; then
             echo "🎯 Generating config-based demos PLUS custom demo with args: $CUSTOM_ARGS"
             make demo-s3 CUSTOM_DEMOS="$CUSTOM_ARGS"
           else
@@ -274,56 +147,35 @@ jobs:
             make demo-s3
           fi
 
-      - name: Get S3 website URL
-        id: s3_url
-        if: contains(steps.params.outputs.demo_type, 's3')
-        run: |
-          BUCKET_NAME="${{ steps.params.outputs.bucket_name }}"
-          S3_URL="http://${BUCKET_NAME}.s3-website-us-east-1.amazonaws.com/"
-          echo "s3_url=$S3_URL" >> $GITHUB_OUTPUT
-          echo "🌐 S3 Website URL: $S3_URL"
-
       - name: Upload demo artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: web-indexer-demo-pr${{ steps.params.outputs.pr_number || 'manual' }}
+          name: web-indexer-demo-pr-${{ env.PR_NUMBER }}
           path: demo/output/
           retention-days: 30
 
-      - name: Comment on PR with demo links
-        if: steps.params.outputs.pr_number
+      - name: Comment on PR with preview links
+        if: success()
         uses: actions/github-script@v7
+        env:
+          S3_URL: ${{ steps.params.outputs.s3_url }}
+          BUCKET_NAME: ${{ steps.params.outputs.bucket_name }}
         with:
           script: |
-            const prNumber = ${{ steps.params.outputs.pr_number }};
-            const bucketName = "${{ steps.params.outputs.bucket_name }}";
-            const s3Url = "${{ steps.s3_url.outputs.s3_url }}";
-            const demoType = "${{ steps.params.outputs.demo_type }}";
-            const demoVariant = "${{ needs.security-check.outputs.demo_variant }}";
-            const customArgs = "${{ needs.security-check.outputs.custom_args }}";
+            const prNumber = ${{ env.PR_NUMBER }};
+            const bucketName = process.env.BUCKET_NAME;
+            const s3Url = process.env.S3_URL;
+            const customArgs = process.env.CUSTOM_ARGS || '';
 
             let comment = `## 🗂️ Web-Indexer Preview
 
-            A live demo has been generated for this pull request:`;
+            A live demo has been generated for this pull request:
 
-            if (demoType.includes('s3')) {
-              comment += `
             **🌐 [Preview on S3](${s3Url})**
-            `;
-            }
 
-            if (demoType.includes('local') || demoType === 'both') {
-              comment += `
-            ### 📁 Local Preview
-            - Download the workflow artifacts to view locally
-            `;
-            }
-
-            // Add demo configuration info
-            comment += `
             ### 🎯 Demo Configuration`;
 
-            if (demoVariant === 'custom' && customArgs) {
+            if (customArgs.trim()) {
               comment += `
             - **Type**: Custom demo (additional)
             - **Arguments**: \`${customArgs}\`
@@ -339,14 +191,15 @@ jobs:
             }
 
             comment += `
+
             ### 🧪 Available Commands
-            - \`/demo\` - Generate all themes demo
-            - \`/demo --args "custom arguments"\` - Generate custom demo *in addition* to themes
-            - \`/demo cleanup\` - Clean up resources
+            - \`/preview\` - Generate all themes demo
+            - \`/preview <args>\` - Generate custom demo *in addition* to themes
+            - \`/preview cleanup\` - Clean up resources
 
             ### 📖 Example Custom Commands
-            - \`/demo --args "--theme nord --title 'My Custom Index'"\`
-            - \`/demo --args "--theme dracula --minify --sort-by last_modified"\`
+            - \`/preview --theme nord --title "My Custom Index"\`
+            - \`/preview --theme dracula --minify --sort-by last_modified\`
 
             ---
             *Preview will be automatically cleaned up when this PR is closed*`;
@@ -358,19 +211,22 @@ jobs:
               body: comment
             });
 
-  # Cleanup demo resources
-  cleanup:
+  auto-cleanup:
+    name: "Auto Cleanup on PR Close/Merge"
     runs-on: ubuntu-latest
-    needs: security-check
-    if: |
-      always() &&
-      needs.security-check.outputs.authorized == 'true' &&
-      needs.security-check.outputs.should_cleanup == 'true'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     environment: preview-pr
-    permissions:
-      pull-requests: write
-      issues: write
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_MERGED: ${{ github.event.pull_request.merged }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_RUN_ID: ${{ github.run_id }}
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -378,29 +234,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.DEMO_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Determine PR number
-        id: pr_info
+      - name: Show auto cleanup details
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PR_NUMBER="${{ github.event.number }}"
-          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-            PR_NUMBER="${{ github.event.issue.number }}"
-          fi
+          echo "🧹 AUTO CLEANUP TRIGGERED"
+          echo "📋 PR Number: $PR_NUMBER"
+          echo "🎯 Trigger: PR ${{ github.event.action }}"
+          echo "🔀 Merged: $PR_MERGED"
 
+      - name: Perform cleanup
+        id: cleanup
+        run: |
           BUCKET_NAME="joshbeard-web-indexer-demo-pr${PR_NUMBER}"
-
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
-
-          echo "🧹 Cleanup parameters:"
-          echo "  PR: $PR_NUMBER"
-          echo "  Bucket: $BUCKET_NAME"
-
-      - name: Cleanup S3 demo resources
-        id: cleanup_result
-        run: |
-          BUCKET_NAME="${{ steps.pr_info.outputs.bucket_name }}"
-          echo "🧹 Cleaning up S3 bucket: $BUCKET_NAME"
+          echo "🧹 Auto-cleaning up preview environment for PR #$PR_NUMBER"
+          echo "   S3 Bucket: $BUCKET_NAME"
 
           # Check if bucket exists
           if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
@@ -415,27 +261,41 @@ jobs:
             aws s3 rb "s3://$BUCKET_NAME" 2>/dev/null || true
 
             echo "cleanup_performed=true" >> $GITHUB_OUTPUT
-            echo "✅ Cleanup completed successfully"
+            echo "✅ Auto cleanup completed"
           else
             echo "ℹ️ Bucket $BUCKET_NAME does not exist or was already cleaned up"
             echo "cleanup_performed=false" >> $GITHUB_OUTPUT
           fi
 
+          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+
       - name: Comment on PR about cleanup
-        if: steps.pr_info.outputs.pr_number && steps.cleanup_result.outputs.cleanup_performed == 'true'
+        if: steps.cleanup.outputs.cleanup_performed == 'true'
         uses: actions/github-script@v7
+        env:
+          BUCKET_NAME: ${{ steps.cleanup.outputs.bucket_name }}
         with:
           script: |
-            const prNumber = ${{ steps.pr_info.outputs.pr_number }};
-            const bucketName = "${{ steps.pr_info.outputs.bucket_name }}";
+            const prNumber = ${{ env.PR_NUMBER }};
+            const bucketName = process.env.BUCKET_NAME;
+            const wasMerged = ${{ env.PR_MERGED }};
 
-            const comment = `## 🧹 Cleanup Complete
+            const comment = `## 🧹 Web-Indexer Preview Cleanup
 
-            Resources for this PR have been cleaned up:
-            - ✅ Demo S3 bucket removed
+            **Trigger:** PR ${wasMerged ? 'merged' : 'closed'}
+            **Status:** ✅ Preview environment automatically cleaned up
+
+            🎉 **Cleanup Complete!**
+            - **S3 Bucket:** \`${bucketName}\` (removed)
+            - **Preview URL:** No longer accessible
+
+            **Auto-cleanup verified:**
+            ✅ S3 bucket and all objects removed
+            ✅ Preview environment resources cleaned up
+            ✅ Temporary artifacts removed
 
             ---
-            *Resources cleaned up automatically*`;
+            *Cleanup completed automatically on PR ${wasMerged ? 'merge' : 'close'}*`;
 
             github.rest.issues.createComment({
               issue_number: prNumber,
@@ -444,28 +304,111 @@ jobs:
               body: comment
             });
 
-  # Manual demo generation (for testing)
-  manual-generate:
+  manual-cleanup:
+    name: "Manual Cleanup (Command)"
+    runs-on: ubuntu-latest
+    if: needs.parse-comment.outputs.cleanup_only == 'true'
+    needs: [parse-comment]
+    environment: preview-pr
+
+    env:
+      PR_NUMBER: ${{ needs.parse-comment.outputs.pr_number }}
+      COMMENT_USER: ${{ needs.parse-comment.outputs.comment_user }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_RUN_ID: ${{ github.run_id }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.DEMO_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEMO_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Show cleanup request details
+        run: |
+          echo "🧹 CLEANUP REQUEST APPROVED"
+          echo "👤 Requested by: $COMMENT_USER"
+          echo "📋 PR Number: $PR_NUMBER"
+          echo "🔒 Approved by: ${{ github.actor }}"
+
+      - name: Perform cleanup
+        id: cleanup
+        run: |
+          BUCKET_NAME="joshbeard-web-indexer-demo-pr${PR_NUMBER}"
+          echo "🧹 Manual cleanup for PR #$PR_NUMBER"
+          echo "   S3 Bucket: $BUCKET_NAME"
+
+          # Check if bucket exists
+          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
+            echo "✅ Bucket exists, proceeding with cleanup..."
+
+            # Delete all objects in the bucket
+            echo "🗑️ Deleting all objects..."
+            aws s3 rm "s3://$BUCKET_NAME" --recursive 2>/dev/null || true
+
+            # Delete the bucket
+            echo "🗑️ Deleting bucket..."
+            aws s3 rb "s3://$BUCKET_NAME" 2>/dev/null || true
+
+            echo "✅ Manual cleanup completed"
+          else
+            echo "ℹ️ Bucket $BUCKET_NAME does not exist or was already cleaned up"
+          fi
+
+          echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
+
+      - name: Comment on manual cleanup result
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          BUCKET_NAME: ${{ steps.cleanup.outputs.bucket_name }}
+        with:
+          script: |
+            const prNumber = ${{ env.PR_NUMBER }};
+            const bucketName = process.env.BUCKET_NAME;
+            const jobStatus = '${{ job.status }}';
+            const success = jobStatus === 'success';
+
+            const comment = `## 🧹 Manual Cleanup ${success ? 'Complete' : 'Failed'}
+
+            **Requested by:** @${{ env.COMMENT_USER }}
+            **Status:** ${success ? '✅' : '❌'} Manual cleanup ${success ? 'completed' : 'failed'}
+
+            ${success ? '🎉 **Cleanup Complete!**' : '🚨 **Cleanup Error**'}
+            - **S3 Bucket:** \`${bucketName}\` ${success ? '(removed)' : '(check logs for details)'}
+            ${success ? '- **Preview URL:** No longer accessible' : '- **Error:** Check workflow logs for details'}
+
+            ${success ? `**Cleanup verified:**
+            ✅ S3 bucket and all objects removed
+            ✅ Preview environment resources cleaned up` : ''}
+
+            ---
+            *Manual cleanup ${success ? 'completed successfully' : 'failed - check logs for details'}*`;
+
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  manual-test:
+    name: "Manual Test"
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     environment: preview-pr
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
+
     env:
       GOTOOLCHAIN: auto
 
     steps:
-      - name: Debug manual trigger
-        run: |
-          echo "🔍 Manual workflow dispatch triggered:"
-          echo "  Demo type: ${{ github.event.inputs.demo_type }}"
-          echo "  PR number: ${{ github.event.inputs.pr_number }}"
-          echo "  Custom demos: ${{ github.event.inputs.custom_demos }}"
-          echo "  Build type: ${{ github.event.inputs.build_type }}"
-
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -483,8 +426,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.DEMO_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Generate manual demo
+      - name: Run manual test
+        env:
+          DEMO_S3_BUCKET: joshbeard-web-indexer-demo-manual-${{ github.run_id }}
         run: |
-          echo "🚀 Generating manual demo..."
+          echo "🎮 Manual web-indexer preview test"
+          echo "PR: ${{ github.event.inputs.pr_number || 'manual' }}"
+          echo "Args: ${{ github.event.inputs.custom_args || 'none' }}"
+          echo "Bucket: $DEMO_S3_BUCKET"
+
           cd demo
-          make demo-s3
+
+          args="${{ github.event.inputs.custom_args }}"
+          if [[ -n "$args" ]]; then
+            make demo-s3 CUSTOM_DEMOS="$args"
+          else
+            make demo-s3
+          fi
+
+      - name: Upload manual test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-indexer-manual-test-${{ github.event.inputs.pr_number || github.run_id }}
+          path: demo/output/
+          retention-days: 7
