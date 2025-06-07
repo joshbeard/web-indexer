@@ -544,7 +544,7 @@ func generateThemesLocalDemo(config *DemoConfig) error {
 	var title string
 	if prNumber != "" {
 		title = fmt.Sprintf("Web-Indexer Preview - PR #%s (Local)", prNumber)
-		description = "Web-indexer generates beautiful, themeable directory listings for local filesystems and S3 buckets."
+		description = "Web-indexer generates themeable directory listings for local filesystems and S3 buckets."
 		if customArgs != "" {
 			description += fmt.Sprintf(" This local preview was generated for pull request #%s with custom arguments: %s", prNumber, customArgs)
 		} else {
