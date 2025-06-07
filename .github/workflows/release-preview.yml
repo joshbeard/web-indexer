@@ -1,0 +1,86 @@
+name: "Release Preview Deploy (Main Branch)"
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-release-preview:
+    name: "Deploy Release Preview"
+    runs-on: ubuntu-latest
+    environment: preview
+
+    env:
+      GOTOOLCHAIN: auto
+      PREVIEW_S3_PREFIX: preview
+      AWS_REGION: us-east-1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from commit
+        id: get_version
+        run: echo "VERSION=main-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.2'
+          check-latest: true
+
+      - name: Build web-indexer
+        run: go build -o web-indexer .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PREVIEW_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PREVIEW_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Show release preview details
+        run: |
+          echo "🚀 RELEASE PREVIEW DEPLOYMENT (MAIN BRANCH)"
+          echo "📦 Version: ${{ steps.get_version.outputs.VERSION }}"
+          echo "🪣 S3 Bucket: ${{ secrets.S3_BUCKET_NAME }}"
+          echo "📂 S3 Prefix: $PREVIEW_S3_PREFIX"
+          echo "🌍 Region: $AWS_REGION"
+          echo "🔗 Preview URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/$PREVIEW_S3_PREFIX/"
+
+      - name: Generate release preview
+        env:
+          DEMO_S3_BUCKET: ${{ secrets.S3_BUCKET_NAME }}
+          DEMO_S3_PREFIX: ${{ env.PREVIEW_S3_PREFIX }}
+          RELEASE_VERSION: ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          echo "🚀 Generating release preview for version $RELEASE_VERSION..."
+          echo "  Target: s3://$DEMO_S3_BUCKET/$DEMO_S3_PREFIX/"
+          echo "  Source: main branch (testing mode)"
+
+          cd demo
+          make demo-s3-release
+
+      - name: Upload demo artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-indexer-release-preview-${{ steps.get_version.outputs.VERSION }}
+          path: demo/output/
+          retention-days: 90
+
+      - name: Deployment summary
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+          PREVIEW_URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/${{ env.PREVIEW_S3_PREFIX }}/
+        run: |
+          echo "✅ Release preview deployment completed!"
+          echo ""
+          echo "📦 Version: $VERSION"
+          echo "🔗 Preview URL: $PREVIEW_URL"
+          echo ""
+          echo "The release preview has been deployed to the persistent S3 bucket"
+          echo "and will remain available for future reference."

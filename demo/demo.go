@@ -71,6 +71,10 @@ type DemoIndex struct {
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
 	Demos       []DemoSpec `json:"demos"`
+	PRNumber    string     `json:"pr_number,omitempty"`
+	PRUrl       string     `json:"pr_url,omitempty"`
+	CustomArgs  string     `json:"custom_args,omitempty"`
+	Repository  string     `json:"repository,omitempty"`
 }
 
 type BucketRecord struct {
@@ -81,7 +85,7 @@ type BucketRecord struct {
 }
 
 func main() {
-	demoType := flag.String("type", "local", "Demo type: local, s3, both")
+	demoType := flag.String("type", "local", "Demo type: local, s3, both, s3-release")
 	serve := flag.Bool("serve", false, "Start web server to preview demo")
 	cleanup := flag.Bool("cleanup", false, "Clean up demo files")
 	configFile := flag.String("config", "config.yml", "Path to YAML configuration file")
@@ -139,7 +143,7 @@ Usage: %s [options]
 
 Options:
   -type string
-        Demo type: local, s3, both (default "local")
+        Demo type: local, s3, both, s3-release (default "local")
   -serve
         Start web server to preview demo
   -cleanup
@@ -154,6 +158,7 @@ Options:
 Examples:
   %s -serve
   %s -type s3
+  %s -type s3-release
   %s -type both -serve
   %s -config my-config.yml -serve
   %s -cleanup
@@ -168,6 +173,14 @@ Environment Variables (for S3 demos):
   AWS_ACCESS_KEY_ID      AWS access key
   AWS_SECRET_ACCESS_KEY  AWS secret key
 
+Environment Variables (for s3-release type):
+  DEMO_S3_BUCKET         S3 bucket name (required)
+  DEMO_S3_PREFIX         S3 prefix path (required)
+  RELEASE_VERSION        Release version for labeling
+  AWS_REGION             AWS region (default: us-east-1)
+  AWS_ACCESS_KEY_ID      AWS access key
+  AWS_SECRET_ACCESS_KEY  AWS secret key
+
 Cleanup Tips:
   # Clean up demo files and ALL tracked S3 buckets
   %s -cleanup
@@ -178,7 +191,7 @@ Cleanup Tips:
   # Bucket tracking: S3 buckets are automatically tracked in demo/.demo-buckets.json
   # and cleaned up when you run -cleanup
 
-`, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+`, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
 }
 
 // loadConfig loads the YAML configuration file
@@ -237,6 +250,9 @@ func setupPaths(config *DemoConfig) error {
 	if config.Type == "s3" || config.Type == "both" {
 		return setupS3Config(config)
 	}
+	if config.Type == "s3-release" {
+		return setupS3ReleaseConfig(config)
+	}
 	return nil
 }
 
@@ -281,6 +297,53 @@ func setupS3Config(config *DemoConfig) error {
 	return nil
 }
 
+func setupS3ReleaseConfig(config *DemoConfig) error {
+	bucket := os.Getenv("DEMO_S3_BUCKET")
+	if bucket == "" {
+		return fmt.Errorf("DEMO_S3_BUCKET environment variable is required for release preview")
+	}
+	config.S3Bucket = bucket
+
+	prefix := os.Getenv("DEMO_S3_PREFIX")
+	if prefix == "" {
+		return fmt.Errorf("DEMO_S3_PREFIX environment variable is required for release preview")
+	}
+
+	// Validate S3 bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
+	if region := os.Getenv("AWS_REGION"); region != "" {
+		config.S3Region = region
+	} else {
+		config.S3Region = config.Config.S3.Region
+		if err := os.Setenv("AWS_REGION", config.S3Region); err != nil {
+			return fmt.Errorf("setting AWS_REGION environment variable: %w", err)
+		}
+	}
+
+	if config.S3Region == "us-east-1" {
+		config.S3PublicURL = fmt.Sprintf("http://%s.s3-website-us-east-1.amazonaws.com/%s/", config.S3Bucket, prefix)
+	} else {
+		config.S3PublicURL = fmt.Sprintf("http://%s.s3-website-%s.amazonaws.com/%s/", config.S3Bucket, config.S3Region, prefix)
+	}
+
+	testCmd := exec.Command("aws", "sts", "get-caller-identity")
+	testCmd.Stderr = nil
+	if err := testCmd.Run(); err != nil {
+		return fmt.Errorf("AWS credentials not available. Please run 'aws configure' or set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables")
+	}
+
+	logf("S3 Release Configuration:")
+	logf("  Bucket: %s", config.S3Bucket)
+	logf("  Prefix: %s", prefix)
+	logf("  Region: %s", config.S3Region)
+	logf("  Public URL: %s", config.S3PublicURL)
+
+	return nil
+}
+
 func logf(format string, args ...interface{}) {
 	fmt.Printf("[DEMO] "+format+"\n", args...)
 }
@@ -299,6 +362,8 @@ func runDemo(config *DemoConfig) error {
 		return generateLocalDemo(config)
 	case "s3":
 		return generateS3Demo(config)
+	case "s3-release":
+		return generateS3ReleaseDemo(config)
 	case "both":
 		if err := generateLocalDemo(config); err != nil {
 			return fmt.Errorf("generating local demo: %w", err)
@@ -475,10 +540,44 @@ func generateThemesLocalDemo(config *DemoConfig) error {
 	}
 
 	logf("Creating local demo index page...")
+
+	// Get PR information from environment variables for consistency
+	prNumber := os.Getenv("PR_NUMBER")
+	repository := os.Getenv("GITHUB_REPOSITORY")
+	customArgs := os.Getenv("CUSTOM_ARGS")
+
+	// Build description based on whether this is a PR preview or regular demo
+	var description string
+	var title string
+	if prNumber != "" {
+		title = fmt.Sprintf("Web-Indexer Preview - PR #%s (Local)", prNumber)
+		description = "Web-indexer generates beautiful, themeable directory listings for local filesystems and S3 buckets."
+		if customArgs != "" {
+			description += fmt.Sprintf(" This local preview was generated for pull request #%s with custom arguments: %s", prNumber, customArgs)
+		} else {
+			description += fmt.Sprintf(" This local preview was generated for pull request #%s showing all available themes.", prNumber)
+		}
+	} else {
+		title = fmt.Sprintf("%s - Local", config.Config.Demo.Title)
+		description = fmt.Sprintf("%s. This demo shows web-indexer generating directory listings with different themes from local filesystem data.", config.Config.Demo.Description)
+	}
+
 	indexData := DemoIndex{
-		Title:       fmt.Sprintf("%s - Local", config.Config.Demo.Title),
-		Description: fmt.Sprintf("%s. This demo shows web-indexer generating directory listings with different themes from local filesystem data.", config.Config.Demo.Description),
+		Title:       title,
+		Description: description,
 		Demos:       config.Config.Demos,
+	}
+
+	// Add PR information if available
+	if prNumber != "" {
+		indexData.PRNumber = prNumber
+		if repository != "" {
+			indexData.PRUrl = fmt.Sprintf("https://github.com/%s/pull/%s", repository, prNumber)
+			indexData.Repository = repository
+		}
+		if customArgs != "" {
+			indexData.CustomArgs = customArgs
+		}
 	}
 
 	return generateIndexPage(config, indexData, "local")
@@ -655,6 +754,68 @@ func generateS3Demo(config *DemoConfig) error {
 	return nil
 }
 
+func cleanS3PrefixDirectory(config *DemoConfig, prefix string) error {
+	logf("Cleaning S3 prefix directory for fresh deployment: %s", prefix)
+
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
+	// Delete all objects under the prefix
+	prefixPath := fmt.Sprintf("s3://%s/%s/", config.S3Bucket, prefix)
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
+	deleteCmd := exec.Command("aws", "s3", "rm", prefixPath, "--recursive")
+	output, err := deleteCmd.CombinedOutput()
+	if err != nil {
+		// Log warning but don't fail - the prefix might not exist yet
+		logf("Warning: Could not clean prefix directory (might not exist): %v\nOutput: %s", err, string(output))
+	} else {
+		logf("Successfully cleaned prefix directory: %s", prefixPath)
+	}
+
+	return nil
+}
+
+// generateS3ReleaseDemo generates demos for S3 release preview with prefix support
+func generateS3ReleaseDemo(config *DemoConfig) error {
+	logf("Generating S3 release demo with prefix support...")
+
+	prefix := os.Getenv("DEMO_S3_PREFIX")
+	if prefix == "" {
+		return fmt.Errorf("DEMO_S3_PREFIX environment variable is required")
+	}
+
+	// The bucket should already exist for release previews, so we don't create it
+	logf("Using existing S3 bucket: %s", config.S3Bucket)
+
+	// Clean the prefix directory for a fresh deployment
+	if err := cleanS3PrefixDirectory(config, prefix); err != nil {
+		return fmt.Errorf("cleaning S3 prefix directory: %w", err)
+	}
+
+	// Upload sample data to S3 with prefix
+	if err := uploadSampleDataToS3WithPrefix(config, prefix); err != nil {
+		return fmt.Errorf("uploading sample data to S3: %w", err)
+	}
+
+	// Generate demos using S3 as both source and target with prefix
+	if err := generateS3DemosWithPrefix(config, prefix); err != nil {
+		return fmt.Errorf("generating S3 demos with prefix: %w", err)
+	}
+
+	// Generate main demo index page locally and upload with prefix
+	if err := generateAndUploadS3IndexPageWithPrefix(config, prefix); err != nil {
+		return fmt.Errorf("generating S3 index page with prefix: %w", err)
+	}
+
+	logf("S3 release demo generated successfully!")
+	logf("-----------------------------------------------------------------------")
+	logf("👉 S3 Release Demo URL: %s", config.S3PublicURL)
+
+	return nil
+}
+
 func uploadSampleDataToS3(config *DemoConfig) error {
 	logf("Uploading sample data to S3 data directory...")
 
@@ -722,11 +883,44 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 		return fmt.Errorf("invalid S3 bucket name: %w", err)
 	}
 
+	// Get PR information from environment variables
+	prNumber := os.Getenv("PR_NUMBER")
+	repository := os.Getenv("GITHUB_REPOSITORY")
+	customArgs := os.Getenv("CUSTOM_ARGS")
+
+	// Build description based on whether this is a PR preview or regular demo
+	var description string
+	var title string
+	if prNumber != "" {
+		title = fmt.Sprintf("Web-Indexer Preview - PR #%s", prNumber)
+		description = "Web-indexer generates beautiful, themeable directory listings for local filesystems and S3 buckets."
+		if customArgs != "" {
+			description += fmt.Sprintf(" This preview was generated for pull request #%s with custom arguments: %s", prNumber, customArgs)
+		} else {
+			description += fmt.Sprintf(" This preview was generated for pull request #%s showing all available themes.", prNumber)
+		}
+	} else {
+		title = fmt.Sprintf("%s - S3", config.Config.Demo.Title)
+		description = fmt.Sprintf("%s. This demo shows web-indexer with S3 as both source and target.", config.Config.Demo.Description)
+	}
+
 	// Create S3 demo index page locally
 	indexData := DemoIndex{
-		Title:       fmt.Sprintf("%s - S3", config.Config.Demo.Title),
-		Description: fmt.Sprintf("%s. This demo shows web-indexer with S3 as both source and target.", config.Config.Demo.Description),
+		Title:       title,
+		Description: description,
 		Demos:       config.Config.Demos,
+	}
+
+	// Add PR information if available
+	if prNumber != "" {
+		indexData.PRNumber = prNumber
+		if repository != "" {
+			indexData.PRUrl = fmt.Sprintf("https://github.com/%s/pull/%s", repository, prNumber)
+			indexData.Repository = repository
+		}
+		if customArgs != "" {
+			indexData.CustomArgs = customArgs
+		}
 	}
 
 	// Generate locally in temp directory
@@ -776,6 +970,153 @@ func generateAndUploadS3IndexPage(config *DemoConfig) error {
 	}
 
 	logf("Successfully uploaded main index page to S3")
+	return nil
+}
+
+func uploadSampleDataToS3WithPrefix(config *DemoConfig, prefix string) error {
+	logf("Uploading sample data to S3 with prefix: %s", prefix)
+
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
+	// Ensure demo data exists locally first
+	if err := createDemoData(config); err != nil {
+		return fmt.Errorf("creating demo data: %w", err)
+	}
+
+	// Upload sample data to s3://bucket/prefix/data/ (clean sync with --delete)
+	dataS3Path := fmt.Sprintf("s3://%s/%s/data/", config.S3Bucket, prefix)
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
+	syncCmd := exec.Command("aws", "s3", "sync", config.DemoDataDir, dataS3Path, "--delete")
+	output, err := syncCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("uploading sample data to S3: %w\nOutput: %s", err, string(output))
+	}
+
+	logf("Successfully uploaded sample data to %s", dataS3Path)
+	return nil
+}
+
+func generateS3DemosWithPrefix(config *DemoConfig, prefix string) error {
+	logf("Generating S3 demos with prefix: %s", prefix)
+
+	dataS3URI := fmt.Sprintf("s3://%s/%s/data", config.S3Bucket, prefix)
+
+	for _, demo := range config.Config.Demos {
+		logf("Generating S3 demo: %s", demo.Name)
+
+		targetS3URI := fmt.Sprintf("s3://%s/%s/%s", config.S3Bucket, prefix, demo.Directory)
+
+		args := []string{
+			"--source", dataS3URI,
+			"--target", targetS3URI,
+		}
+
+		// Parse and add arguments from config
+		if demo.Args != "" {
+			customArgs, err := parseArgs(demo.Args)
+			if err != nil {
+				return fmt.Errorf("parsing demo args for %s: %w", demo.Name, err)
+			}
+			args = append(args, customArgs...)
+		}
+
+		logf("Running web-indexer with S3 source and target: %s → %s", dataS3URI, targetS3URI)
+		if err := runWebIndexer(config, args); err != nil {
+			return fmt.Errorf("generating %s demo with S3 source: %w", demo.Name, err)
+		}
+	}
+
+	return nil
+}
+
+func generateAndUploadS3IndexPageWithPrefix(config *DemoConfig, prefix string) error {
+	logf("Generating and uploading S3 demo index page with prefix: %s", prefix)
+
+	// Validate bucket name
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return fmt.Errorf("invalid S3 bucket name: %w", err)
+	}
+
+	// Get release information from environment variables
+	releaseVersion := os.Getenv("RELEASE_VERSION")
+	repository := os.Getenv("GITHUB_REPOSITORY")
+
+	// Build description for release preview
+	var description string
+	var title string
+	if releaseVersion != "" {
+		title = fmt.Sprintf("Web-Indexer Release Preview - v%s", releaseVersion)
+		description = fmt.Sprintf("Web-indexer generates beautiful, themeable directory listings for local filesystems and S3 buckets. This is the release preview for version %s showing all available themes.", releaseVersion)
+	} else {
+		title = fmt.Sprintf("%s - Release Preview", config.Config.Demo.Title)
+		description = fmt.Sprintf("%s. This is the release preview showing web-indexer with S3 as both source and target.", config.Config.Demo.Description)
+	}
+
+	// Create S3 demo index page locally
+	indexData := DemoIndex{
+		Title:       title,
+		Description: description,
+		Demos:       config.Config.Demos,
+	}
+
+	// Add release information if available
+	if releaseVersion != "" {
+		indexData.CustomArgs = fmt.Sprintf("Release: v%s", releaseVersion)
+		if repository != "" {
+			indexData.Repository = repository
+		}
+	}
+
+	// Generate locally in temp directory
+	tempDir := filepath.Join(config.DemoOutputDir, "temp-s3-release-index")
+	if err := os.MkdirAll(tempDir, 0o750); err != nil {
+		return fmt.Errorf("creating temp directory: %w", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Generate index page
+	outputPath := filepath.Join(tempDir, "index.html")
+	templatePath := filepath.Join(config.TemplatesDir, "demo-index.html")
+
+	// Validate paths
+	if err := validateFilePath(outputPath); err != nil {
+		return fmt.Errorf("invalid output path: %w", err)
+	}
+	if err := validateFilePath(templatePath); err != nil {
+		return fmt.Errorf("invalid template path: %w", err)
+	}
+
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return fmt.Errorf("parsing template file %s: %w", templatePath, err)
+	}
+
+	// #nosec G304 -- outputPath is validated by validateFilePath() above
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("creating index file: %w", err)
+	}
+	defer file.Close()
+
+	if err := tmpl.Execute(file, indexData); err != nil {
+		return fmt.Errorf("executing template: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("closing index file: %w", err)
+	}
+
+	// Upload to S3 with prefix
+	// #nosec G204 -- config.S3Bucket is validated by validateS3BucketName()
+	uploadCmd := exec.Command("aws", "s3", "cp", outputPath, fmt.Sprintf("s3://%s/%s/index.html", config.S3Bucket, prefix))
+	output, err := uploadCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("uploading index page to S3: %w\nOutput: %s", err, string(output))
+	}
+
+	logf("Successfully uploaded main index page to S3 with prefix")
 	return nil
 }
 

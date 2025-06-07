@@ -161,9 +161,14 @@ jobs:
       - name: Generate web-indexer demo
         env:
           DEMO_S3_BUCKET: ${{ steps.params.outputs.bucket_name }}
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+          GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
+          CUSTOM_ARGS: ${{ env.CUSTOM_ARGS }}
         run: |
           echo "🚀 Generating web-indexer preview..."
           echo "  Bucket: $DEMO_S3_BUCKET"
+          echo "  PR Number: $PR_NUMBER"
+          echo "  Repository: $GITHUB_REPOSITORY"
           echo "  Custom args: $CUSTOM_ARGS"
 
           cd demo

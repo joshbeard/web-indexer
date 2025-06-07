@@ -21,7 +21,7 @@ function getDeploymentStatusComment(status, options = {}) {
       return `⏳ ${isCleanup ? 'Cleanup' : 'Preview'} awaiting approval...`;
 
     case 'running':
-      return `⚡ ${isCleanup ? 'Cleanup' : 'Preview'} approved, running...`;
+      return `⚡ ${isCleanup ? 'Cleanup' : 'Preview'} approved, generating...`;
 
     case 'success':
       if (isCleanup) {

@@ -38,6 +38,22 @@ demo-s3: ## Generate S3 demo
 		go run demo.go -type s3; \
 	fi
 
+.PHONY: demo-s3-release
+demo-s3-release: ## Generate S3 demo for release preview
+	@echo "🚀 Generating S3 release preview demo..."
+	@if [ -z "$(DEMO_S3_BUCKET)" ]; then \
+		echo "❌ DEMO_S3_BUCKET environment variable is required"; \
+		exit 1; \
+	fi
+	@if [ -z "$(DEMO_S3_PREFIX)" ]; then \
+		echo "❌ DEMO_S3_PREFIX environment variable is required"; \
+		exit 1; \
+	fi
+	@echo "  Target bucket: $(DEMO_S3_BUCKET)"
+	@echo "  Target prefix: $(DEMO_S3_PREFIX)"
+	@echo "  Release version: $(RELEASE_VERSION)"
+	go run demo.go -type s3-release
+
 .PHONY: demo-both
 demo-both: ## Generate both local and S3 demos
 	@echo "🚀 Generating both local and S3 demos..."
