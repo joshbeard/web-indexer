@@ -48,7 +48,7 @@ jobs:
           echo "📦 Version: ${{ steps.get_version.outputs.VERSION }}"
           echo "🪣 S3 Bucket: ${{ secrets.S3_BUCKET_NAME }}"
           echo "🌍 Region: $AWS_REGION"
-          echo "🔗 Preview URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/"
+          echo "🔗 Preview URL: https://web-indexer.jbeard.dev/"
 
       - name: Generate release preview
         env:
@@ -72,7 +72,7 @@ jobs:
       - name: Deployment summary
         env:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
-          PREVIEW_URL: http://${{ secrets.S3_BUCKET_NAME }}.s3-website-us-east-1.amazonaws.com/
+          PREVIEW_URL: https://web-indexer.jbeard.dev/
         run: |
           echo "✅ Release preview deployment completed!"
           echo ""

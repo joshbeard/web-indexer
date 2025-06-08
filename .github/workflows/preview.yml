@@ -148,14 +148,15 @@ jobs:
         id: params
         run: |
           BUCKET_NAME="joshbeard-web-indexer-demo-pr${PR_NUMBER}"
-          S3_URL="http://${BUCKET_NAME}.s3-website-us-east-1.amazonaws.com/"
+          # Use custom domain URL instead of direct S3 website URL
+          PREVIEW_URL="https://web-indexer.jbeard.dev/pr/${PR_NUMBER}/"
 
           echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT
-          echo "s3_url=$S3_URL" >> $GITHUB_OUTPUT
+          echo "s3_url=$PREVIEW_URL" >> $GITHUB_OUTPUT
 
           echo "📋 Preview parameters:"
           echo "  Bucket: $BUCKET_NAME"
-          echo "  URL: $S3_URL"
+          echo "  URL: $PREVIEW_URL"
           echo "  Custom args: $CUSTOM_ARGS"
 
       - name: Generate web-indexer demo

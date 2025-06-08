@@ -2,15 +2,14 @@
 # Web-Indexer Demo Configuration
 # -----------------------------------------------------------------------------
 
-demo:
-  name: "web-indexer-demo"
-  title: "Web-Indexer Demo"
-  description: "Demonstration of web-indexer capabilities with multiple themes and configurations"
-
 # S3 Configuration
 s3:
   bucket_prefix: "joshbeard-web-indexer-demo"
   region: "us-east-1"
+  custom_domain:
+    enabled: true
+    base_url: "https://web-indexer.jbeard.dev"
+    preview_path: "/pr"
 
 # Local Server Configuration
 server:
