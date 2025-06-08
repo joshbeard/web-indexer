@@ -11,7 +11,7 @@ help: ## Shows this help for demo targets
 .PHONY: demo
 demo: ## Generate and serve a live demo (local only)
 	@echo "🚀 Generating and serving comprehensive demo..."
-	@if [ -n "$(CUSTOM_DEMOS)" ]; then \
+	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
 		go run demo.go -serve -custom-demos "$(CUSTOM_DEMOS)"; \
 	else \
@@ -21,7 +21,7 @@ demo: ## Generate and serve a live demo (local only)
 .PHONY: demo-local
 demo-local: ## Generate and serve a local-only demo
 	@echo "🚀 Generating local demo..."
-	@if [ -n "$(CUSTOM_DEMOS)" ]; then \
+	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
 		go run demo.go -type local -serve -custom-demos "$(CUSTOM_DEMOS)"; \
 	else \
@@ -31,7 +31,7 @@ demo-local: ## Generate and serve a local-only demo
 .PHONY: demo-s3
 demo-s3: ## Generate S3 demo
 	@echo "🚀 Generating S3 demo..."
-	@if [ -n "$(CUSTOM_DEMOS)" ]; then \
+	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
 		go run demo.go -type s3 -custom-demos "$(CUSTOM_DEMOS)"; \
 	else \
@@ -52,7 +52,7 @@ demo-s3-release: ## Generate S3 demo for release preview
 .PHONY: demo-both
 demo-both: ## Generate both local and S3 demos
 	@echo "🚀 Generating both local and S3 demos..."
-	@if [ -n "$(CUSTOM_DEMOS)" ]; then \
+	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
 		go run demo.go -type both -serve -custom-demos "$(CUSTOM_DEMOS)"; \
 	else \
