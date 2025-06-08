@@ -451,21 +451,19 @@ func generateIndexPage(config *DemoConfig, variant string) error {
 	repository := os.Getenv("GITHUB_REPOSITORY")
 	customArgs := os.Getenv("CUSTOM_ARGS")
 	releaseVersion := os.Getenv("RELEASE_VERSION")
-	var title, description string
+
+	var title string
 	if config.Type == "s3-release" && releaseVersion != "" {
 		title = fmt.Sprintf("Web-Indexer Release Preview - v%s", releaseVersion)
-		description = fmt.Sprintf("Release preview for version %s", releaseVersion)
 	} else if prNumber != "" {
 		title = fmt.Sprintf("Web-Indexer Preview - PR #%s", prNumber)
-		description = fmt.Sprintf("Preview for pull request #%s", prNumber)
 	} else {
 		title = "Web-Indexer Preview"
-		description = "Web-indexer generates themeable directory listings"
 	}
 
 	indexData := DemoIndex{
 		Title:       title,
-		Description: description,
+		Description: "Web-indexer generates themeable directory listings",
 		Demos:       config.Config.Demos,
 		PRNumber:    prNumber,
 		Repository:  repository,

@@ -83,31 +83,7 @@
             opacity: 0.8;
         }
 
-        .pr-info {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 1rem;
-            margin: 1.5rem 0;
-        }
 
-        .pr-info h3 {
-            margin: 0 0 0.8rem 0;
-            font-size: 1rem;
-        }
-
-        .pr-info p {
-            margin: 0.3rem 0;
-            font-size: 0.9rem;
-        }
-
-        .pr-info code {
-            background: var(--code-bg);
-            padding: 0.2rem 0.4rem;
-            border-radius: 3px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.85rem;
-        }
 
         .footer {
             margin-top: 2rem;
@@ -134,20 +110,19 @@
         body > p {
             margin-top: 0.5rem;
         }
+
+        body > p code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
     <h1>🗂️ {{.Title}}</h1>
-    <p>{{.Description}}</p>
-
-    {{if .PRNumber}}
-    <div class="pr-info">
-        <h3>📋 Pull Request Information</h3>
-        <p><strong>PR #{{.PRNumber}}</strong>{{if .PRUrl}} - <a href="{{.PRUrl}}" target="_blank">View on GitHub</a>{{end}}</p>
-        {{if .CustomArgs}}<p><strong>Custom Arguments:</strong> <code>{{.CustomArgs}}</code></p>{{end}}
-        {{if .Repository}}<p><strong>Repository:</strong> <a href="https://github.com/{{.Repository}}" target="_blank">{{.Repository}}</a></p>{{end}}
-    </div>
-    {{end}}
+    <p>{{if .PRNumber}}{{if .PRUrl}}Preview for <a href="{{.PRUrl}}" target="_blank">pull request #{{.PRNumber}}</a>{{else}}Preview for pull request #{{.PRNumber}}{{end}}{{if .CustomArgs}} with custom arguments: <code>{{.CustomArgs}}</code>{{end}}{{else}}{{.Description}}{{end}}</p>
 
     <ul class="demo-list">
         {{range .Demos}}
