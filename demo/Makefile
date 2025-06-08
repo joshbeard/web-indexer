@@ -13,7 +13,7 @@ demo: ## Generate and serve a live demo (local only)
 	@echo "🚀 Generating and serving comprehensive demo..."
 	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
-		go run demo.go -serve -custom-demos "$(CUSTOM_DEMOS)"; \
+		go run demo.go -serve -custom-demos '$(CUSTOM_DEMOS)'; \
 	else \
 		go run demo.go -serve; \
 	fi
@@ -23,7 +23,7 @@ demo-local: ## Generate and serve a local-only demo
 	@echo "🚀 Generating local demo..."
 	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
-		go run demo.go -type local -serve -custom-demos "$(CUSTOM_DEMOS)"; \
+		go run demo.go -type local -serve -custom-demos '$(CUSTOM_DEMOS)'; \
 	else \
 		go run demo.go -type local -serve; \
 	fi
@@ -33,7 +33,7 @@ demo-s3: ## Generate S3 demo
 	@echo "🚀 Generating S3 demo..."
 	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
-		go run demo.go -type s3 -custom-demos "$(CUSTOM_DEMOS)"; \
+		go run demo.go -type s3 -custom-demos '$(CUSTOM_DEMOS)'; \
 	else \
 		go run demo.go -type s3; \
 	fi
@@ -54,7 +54,7 @@ demo-both: ## Generate both local and S3 demos
 	@echo "🚀 Generating both local and S3 demos..."
 	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
 		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
-		go run demo.go -type both -serve -custom-demos "$(CUSTOM_DEMOS)"; \
+		go run demo.go -type both -serve -custom-demos '$(CUSTOM_DEMOS)'; \
 	else \
 		go run demo.go -type both -serve; \
 	fi
