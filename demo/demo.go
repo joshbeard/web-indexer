@@ -596,7 +596,6 @@ func parseArgs(s string) ([]string, error) {
 	var current strings.Builder
 	var inQuote bool
 	var quoteChar byte
-	var quotedArg bool
 
 	for i := 0; i < len(s); i++ {
 		c := s[i]
@@ -604,19 +603,12 @@ func parseArgs(s string) ([]string, error) {
 		case !inQuote && (c == '"' || c == '\''):
 			inQuote = true
 			quoteChar = c
-			quotedArg = true
 		case inQuote && c == quoteChar:
 			inQuote = false
 		case !inQuote && c == ' ':
 			if current.Len() > 0 {
-				arg := current.String()
-				// Re-add quotes if the original argument was quoted and contains spaces
-				if quotedArg && strings.Contains(arg, " ") {
-					arg = fmt.Sprintf(`"%s"`, arg)
-				}
-				args = append(args, arg)
+				args = append(args, current.String())
 				current.Reset()
-				quotedArg = false
 			}
 		default:
 			current.WriteByte(c)
@@ -628,12 +620,7 @@ func parseArgs(s string) ([]string, error) {
 	}
 
 	if current.Len() > 0 {
-		arg := current.String()
-		// Re-add quotes if the original argument was quoted and contains spaces
-		if quotedArg && strings.Contains(arg, " ") {
-			arg = fmt.Sprintf(`"%s"`, arg)
-		}
-		args = append(args, arg)
+		args = append(args, current.String())
 	}
 
 	return args, nil
