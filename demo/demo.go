@@ -291,6 +291,10 @@ func runDemo(config *DemoConfig) error {
 		return err
 	}
 
+	if err := generateSourceTree(config); err != nil {
+		logf("Warning: Could not generate source tree: %v", err)
+	}
+
 	switch config.Type {
 	case "local":
 		return generateLocalDemo(config)
@@ -349,7 +353,7 @@ func generateLocalDemo(config *DemoConfig) error {
 	logf("Generating local demos...")
 
 	for _, demo := range config.Config.Demos {
-		if err := generateDemo(config, demo, config.DemoDataDir, filepath.Join(config.DemoOutputDir, "local", demo.Directory)); err != nil {
+		if err := generateSingleDemo(config, demo, "local"); err != nil {
 			return fmt.Errorf("generating demo %s: %w", demo.Name, err)
 		}
 	}
@@ -372,14 +376,24 @@ func generateS3Demo(config *DemoConfig) error {
 		return fmt.Errorf("uploading sample data: %w", err)
 	}
 
+	if err := uploadErrorPageToS3(config); err != nil {
+		return fmt.Errorf("uploading error page: %w", err)
+	}
+
 	// Generate demos using S3 as source and target
 	dataS3URI := fmt.Sprintf("s3://%s/data", config.S3Bucket)
 	for _, demo := range config.Config.Demos {
 		targetS3URI := fmt.Sprintf("s3://%s/%s", config.S3Bucket, demo.Directory)
-		if err := generateDemo(config, demo, dataS3URI, targetS3URI); err != nil {
+		if err := generateS3SingleDemo(config, demo, dataS3URI, targetS3URI); err != nil {
 			return fmt.Errorf("generating S3 demo %s: %w", demo.Name, err)
 		}
 	}
+
+	// Source tree is now part of the source data and gets synced automatically
+
+	// Clean up the temporary data directory
+	logf("Cleaning up temporary data directory...")
+	exec.Command("aws", "s3", "rm", fmt.Sprintf("s3://%s/data", config.S3Bucket), "--recursive").Run()
 
 	if err := generateAndUploadS3IndexPage(config); err != nil {
 		return fmt.Errorf("generating S3 index page: %w", err)
@@ -389,37 +403,59 @@ func generateS3Demo(config *DemoConfig) error {
 	return nil
 }
 
-func generateDemo(config *DemoConfig, demo DemoSpec, source, target string) error {
-	logf("Generating demo: %s (%s -> %s)", demo.Name, source, target)
+func generateSingleDemo(config *DemoConfig, demo DemoSpec, demoType string) error {
+	logf("Generating %s demo: %s", demoType, demo.Name)
 
-	// Build web-indexer command directly - this is the core of what we're doing
-	args := []string{config.WebIndexerBinary, "--source", source, "--target", target}
+	var sourceDir, targetDir string
+	if demoType == "local" {
+		sourceDir = config.DemoDataDir
+		targetDir = filepath.Join(config.DemoOutputDir, "local", demo.Directory)
+	}
 
-	// Parse and append custom arguments if provided
+	args := []string{"--source", sourceDir, "--target", targetDir}
 	if demo.Args != "" {
 		customArgs, err := parseArgs(demo.Args)
 		if err != nil {
-			return fmt.Errorf("parsing demo args %q: %w", demo.Args, err)
+			return fmt.Errorf("parsing args: %w", err)
 		}
 		args = append(args, customArgs...)
 	}
 
-	// Show the actual command being executed for transparency
-	logf("Running: %s", strings.Join(args, " "))
-
-	// Execute web-indexer directly
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Dir = config.ProjectRoot
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("web-indexer failed: %w\nOutput: %s", err, string(output))
+	if err := runWebIndexer(config, args); err != nil {
+		return fmt.Errorf("running web-indexer: %w", err)
 	}
 
-	// Copy source files for local demos (when both source and target are local paths)
-	if !strings.HasPrefix(source, "s3://") && !strings.HasPrefix(target, "s3://") {
-		if err := copyFiles(source, target); err != nil {
+	// Copy source files to target for local demos
+	if demoType == "local" {
+		if err := copyFiles(sourceDir, targetDir); err != nil {
 			logf("Warning: Could not copy source files: %v", err)
 		}
+	}
+
+	return nil
+}
+
+func generateS3SingleDemo(config *DemoConfig, demo DemoSpec, sourceS3URI, targetS3URI string) error {
+	logf("Generating S3 demo: %s (%s -> %s)", demo.Name, sourceS3URI, targetS3URI)
+
+	args := []string{"--source", sourceS3URI, "--target", targetS3URI}
+	if demo.Args != "" {
+		customArgs, err := parseArgs(demo.Args)
+		if err != nil {
+			return fmt.Errorf("parsing args: %w", err)
+		}
+		args = append(args, customArgs...)
+	}
+
+	if err := runWebIndexer(config, args); err != nil {
+		return fmt.Errorf("running web-indexer: %w", err)
+	}
+
+	// Copy source files to target for S3 demos
+	logf("Copying source files from %s to %s", sourceS3URI, targetS3URI)
+	syncCmd := exec.Command("aws", "s3", "sync", sourceS3URI+"/", targetS3URI+"/")
+	if err := syncCmd.Run(); err != nil {
+		logf("Warning: Could not copy S3 source files: %v", err)
 	}
 
 	return nil
@@ -456,7 +492,7 @@ func generateIndexPage(config *DemoConfig, variant string) error {
 	}
 
 	outputPath := filepath.Join(config.DemoOutputDir, variant, "index.html")
-	templatePath := filepath.Join(config.TemplatesDir, "demo-index.html")
+	templatePath := filepath.Join(config.TemplatesDir, "index.html")
 
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
@@ -518,6 +554,26 @@ func cleanupS3Bucket(config *DemoConfig) error {
 		return nil
 	}
 
+	// If DEMO_S3_BUCKET is set, clean up that specific bucket
+	if specificBucket := os.Getenv("DEMO_S3_BUCKET"); specificBucket != "" {
+		logf("Cleaning up specific S3 bucket: %s", specificBucket)
+		if err := validateS3BucketName(specificBucket); err != nil {
+			logf("Warning: Invalid bucket name %s: %v", specificBucket, err)
+		} else {
+			exec.Command("aws", "s3", "rm", fmt.Sprintf("s3://%s", specificBucket), "--recursive").Run()
+			if err := exec.Command("aws", "s3", "rb", fmt.Sprintf("s3://%s", specificBucket)).Run(); err == nil {
+				logf("Deleted bucket: %s", specificBucket)
+				removeTrackedBucket(config, specificBucket)
+			} else {
+				logf("Warning: Could not delete bucket %s (may not exist)", specificBucket)
+				// Still try to remove from tracking in case it's stale
+				removeTrackedBucket(config, specificBucket)
+			}
+		}
+		return nil
+	}
+
+	// Otherwise, clean up all tracked buckets
 	buckets, err := getTrackedBuckets(config)
 	if err != nil || len(buckets) == 0 {
 		return err
@@ -561,12 +617,18 @@ func logf(format string, args ...interface{}) {
 	fmt.Printf("[DEMO] "+format+"\n", args...)
 }
 
-// parseArgs handles quoted arguments properly for demo configuration
-func parseArgs(s string) ([]string, error) {
-	if s == "" {
-		return nil, nil
+func runWebIndexer(config *DemoConfig, args []string) error {
+	cmd := exec.Command(config.WebIndexerBinary, args...)
+	cmd.Dir = config.ProjectRoot
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("web-indexer failed: %w\nOutput: %s", err, string(output))
 	}
 
+	return nil
+}
+
+func parseArgs(s string) ([]string, error) {
 	var args []string
 	var current strings.Builder
 	var inQuote bool
@@ -740,6 +802,27 @@ func uploadSampleDataToS3(config *DemoConfig) error {
 	return nil
 }
 
+func uploadErrorPageToS3(config *DemoConfig) error {
+	logf("Uploading error page to S3...")
+
+	if err := validateS3BucketName(config.S3Bucket); err != nil {
+		return err
+	}
+
+	errorPagePath := filepath.Join(config.TemplatesDir, "error.html")
+	if _, err := os.Stat(errorPagePath); os.IsNotExist(err) {
+		return fmt.Errorf("error page template not found: %s", errorPagePath)
+	}
+
+	uploadCmd := exec.Command("aws", "s3", "cp", errorPagePath, fmt.Sprintf("s3://%s/error.html", config.S3Bucket))
+	if err := uploadCmd.Run(); err != nil {
+		return fmt.Errorf("uploading error page to S3: %w", err)
+	}
+
+	logf("Error page uploaded successfully")
+	return nil
+}
+
 func trackS3Bucket(config *DemoConfig) error {
 	bucketFile := filepath.Join(config.ProjectRoot, ".demo-buckets.json")
 
@@ -812,5 +895,125 @@ func validateS3BucketName(bucket string) error {
 		return fmt.Errorf("invalid S3 bucket name: %s", bucket)
 	}
 
+	return nil
+}
+
+func humanizeBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+type TreeItem struct {
+	Name        string
+	IsDir       bool
+	Size        string
+	Depth       int
+	IsNoIndex   bool
+	IsSkipIndex bool
+	Indent      string
+	Prefix      string
+	Class       string
+	Suffix      string
+}
+
+type SourceTreeData struct {
+	Items []TreeItem
+}
+
+func generateSourceTree(config *DemoConfig) error {
+	logf("Generating source data tree...")
+
+	var items []TreeItem
+
+	err := filepath.Walk(config.DemoDataDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Calculate relative path and depth
+		relPath, err := filepath.Rel(config.DemoDataDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Skip the root directory itself
+		if relPath == "." {
+			return nil
+		}
+
+		depth := strings.Count(relPath, string(filepath.Separator))
+		size := ""
+		if !info.IsDir() {
+			size = humanizeBytes(info.Size())
+		}
+
+		// Prepare template data
+		indent := strings.Repeat("    ", depth)
+		prefix := "├── "
+		class := "file"
+		suffix := ""
+
+		if info.IsDir() {
+			class = "dir"
+			suffix = "/"
+		} else if info.Name() == ".noindex" {
+			class = "special"
+			suffix = fmt.Sprintf(" (%s) [excludes directory from indexing]", size)
+		} else if info.Name() == ".skipindex" {
+			class = "special"
+			suffix = fmt.Sprintf(" (%s) [directory appears in listings but no index generated]", size)
+		} else if size != "" {
+			suffix = fmt.Sprintf(" (%s)", size)
+		}
+
+		item := TreeItem{
+			Name:        info.Name(),
+			IsDir:       info.IsDir(),
+			Size:        size,
+			Depth:       depth,
+			IsNoIndex:   info.Name() == ".noindex",
+			IsSkipIndex: info.Name() == ".skipindex",
+			Indent:      indent,
+			Prefix:      prefix,
+			Class:       class,
+			Suffix:      suffix,
+		}
+
+		items = append(items, item)
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("walking source directory: %w", err)
+	}
+
+	// Generate HTML using template
+	templatePath := filepath.Join(config.TemplatesDir, "source-tree.html.tmpl")
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return fmt.Errorf("parsing source tree template: %w", err)
+	}
+
+	sourceTreePath := filepath.Join(config.DemoDataDir, "source-tree.html")
+	file, err := os.Create(sourceTreePath)
+	if err != nil {
+		return fmt.Errorf("creating source tree file: %w", err)
+	}
+	defer file.Close()
+
+	data := SourceTreeData{Items: items}
+	if err := tmpl.Execute(file, data); err != nil {
+		return fmt.Errorf("executing source tree template: %w", err)
+	}
+
+	logf("Generated source tree: %s", sourceTreePath)
 	return nil
 }

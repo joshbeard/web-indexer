@@ -245,22 +245,18 @@ jobs:
           echo "🧹 Auto-cleaning up preview environment for PR #$PR_NUMBER"
           echo "   S3 Bucket: $BUCKET_NAME"
 
-          # Check if bucket exists
-          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-            echo "✅ Bucket exists, proceeding with cleanup..."
+          # Use the demo's built-in cleanup system
+          echo "🧹 Running demo cleanup (includes S3 bucket tracking)..."
+          cd demo
 
-            # Delete all objects in the bucket
-            echo "🗑️ Deleting all objects..."
-            aws s3 rm "s3://$BUCKET_NAME" --recursive 2>/dev/null || true
+          # Set the bucket name in environment for cleanup to find it
+          export DEMO_S3_BUCKET="$BUCKET_NAME"
 
-            # Delete the bucket
-            echo "🗑️ Deleting bucket..."
-            aws s3 rb "s3://$BUCKET_NAME" 2>/dev/null || true
-
+          if go run demo.go -cleanup; then
             echo "cleanup_performed=true" >> $GITHUB_OUTPUT
             echo "✅ Auto cleanup completed"
           else
-            echo "ℹ️ Bucket $BUCKET_NAME does not exist or was already cleaned up"
+            echo "⚠️ Demo cleanup had issues, but continuing..."
             echo "cleanup_performed=false" >> $GITHUB_OUTPUT
           fi
 
@@ -332,21 +328,17 @@ jobs:
           echo "🧹 Manual cleanup for PR #$PR_NUMBER"
           echo "   S3 Bucket: $BUCKET_NAME"
 
-          # Check if bucket exists
-          if aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
-            echo "✅ Bucket exists, proceeding with cleanup..."
+          # Use the demo's built-in cleanup system
+          echo "🧹 Running demo cleanup (includes S3 bucket tracking)..."
+          cd demo
 
-            # Delete all objects in the bucket
-            echo "🗑️ Deleting all objects..."
-            aws s3 rm "s3://$BUCKET_NAME" --recursive 2>/dev/null || true
+          # Set the bucket name in environment for cleanup to find it
+          export DEMO_S3_BUCKET="$BUCKET_NAME"
 
-            # Delete the bucket
-            echo "🗑️ Deleting bucket..."
-            aws s3 rb "s3://$BUCKET_NAME" 2>/dev/null || true
-
+          if go run demo.go -cleanup; then
             echo "✅ Manual cleanup completed"
           else
-            echo "ℹ️ Bucket $BUCKET_NAME does not exist or was already cleaned up"
+            echo "⚠️ Demo cleanup had issues, but continuing..."
           fi
 
           echo "bucket_name=$BUCKET_NAME" >> $GITHUB_OUTPUT

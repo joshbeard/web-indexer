@@ -2,6 +2,8 @@
 
 Generate live demonstrations of web-indexer with multiple configurations.
 
+This is mainly intended for use in pull requests and upon release for generating previews of web-indexer.
+
 ## Quick Start
 
 ```bash
