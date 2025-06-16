@@ -24,15 +24,9 @@ type Config struct {
 }
 
 type S3Settings struct {
-	BucketPrefix string             `yaml:"bucket_prefix"`
-	Region       string             `yaml:"region"`
-	CustomDomain CustomDomainConfig `yaml:"custom_domain"`
-}
-
-type CustomDomainConfig struct {
-	Enabled     bool   `yaml:"enabled"`
-	BaseURL     string `yaml:"base_url"`
-	PreviewPath string `yaml:"preview_path"`
+	BucketPrefix string `yaml:"bucket_prefix"`
+	Region       string `yaml:"region"`
+	CustomDomain string `yaml:"custom_domain"`
 }
 
 type ServerSettings struct {
@@ -232,9 +226,6 @@ func setupPaths(config *DemoConfig) error {
 }
 
 func setupS3Config(config *DemoConfig) error {
-	if err := validateCustomDomainConfig(config); err != nil {
-		return fmt.Errorf("custom domain configuration error: %w", err)
-	}
 	if bucket := os.Getenv("DEMO_S3_BUCKET"); bucket != "" {
 		config.S3Bucket = bucket
 	} else if config.Type == "s3-release" {
@@ -272,13 +263,13 @@ func setupS3Config(config *DemoConfig) error {
 }
 
 func shouldUseCustomDomain(config *DemoConfig) bool {
-	return config.Config.S3.CustomDomain.Enabled && os.Getenv("GITHUB_ACTIONS") == "true"
+	return config.Config.S3.CustomDomain != "" && os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
 func buildCustomDomainURL(config *DemoConfig) string {
-	customDomain := config.Config.S3.CustomDomain
-	baseURL := strings.TrimSuffix(customDomain.BaseURL, "/")
-	previewPath := strings.TrimSuffix(customDomain.PreviewPath, "/")
+	baseURL := strings.TrimSuffix(config.Config.S3.CustomDomain, "/")
+
+	previewPath := strings.TrimSuffix(baseURL, "/")
 
 	if config.Type == "s3-release" {
 		return fmt.Sprintf("%s/", baseURL)
@@ -358,7 +349,7 @@ func generateLocalDemo(config *DemoConfig) error {
 	logf("Generating local demos...")
 
 	for _, demo := range config.Config.Demos {
-		if err := generateSingleDemo(config, demo, "local"); err != nil {
+		if err := generateDemo(config, demo, config.DemoDataDir, filepath.Join(config.DemoOutputDir, "local", demo.Directory)); err != nil {
 			return fmt.Errorf("generating demo %s: %w", demo.Name, err)
 		}
 	}
@@ -385,7 +376,7 @@ func generateS3Demo(config *DemoConfig) error {
 	dataS3URI := fmt.Sprintf("s3://%s/data", config.S3Bucket)
 	for _, demo := range config.Config.Demos {
 		targetS3URI := fmt.Sprintf("s3://%s/%s", config.S3Bucket, demo.Directory)
-		if err := generateS3SingleDemo(config, demo, dataS3URI, targetS3URI); err != nil {
+		if err := generateDemo(config, demo, dataS3URI, targetS3URI); err != nil {
 			return fmt.Errorf("generating S3 demo %s: %w", demo.Name, err)
 		}
 	}
@@ -398,50 +389,40 @@ func generateS3Demo(config *DemoConfig) error {
 	return nil
 }
 
-func generateSingleDemo(config *DemoConfig, demo DemoSpec, demoType string) error {
-	logf("Generating %s demo: %s", demoType, demo.Name)
+func generateDemo(config *DemoConfig, demo DemoSpec, source, target string) error {
+	logf("Generating demo: %s (%s -> %s)", demo.Name, source, target)
 
-	var sourceDir, targetDir string
-	if demoType == "local" {
-		sourceDir = config.DemoDataDir
-		targetDir = filepath.Join(config.DemoOutputDir, "local", demo.Directory)
-	}
+	// Build web-indexer command directly - this is the core of what we're doing
+	args := []string{config.WebIndexerBinary, "--source", source, "--target", target}
 
-	args := []string{"--source", sourceDir, "--target", targetDir}
+	// Parse and append custom arguments if provided
 	if demo.Args != "" {
 		customArgs, err := parseArgs(demo.Args)
 		if err != nil {
-			return fmt.Errorf("parsing args: %w", err)
+			return fmt.Errorf("parsing demo args %q: %w", demo.Args, err)
 		}
 		args = append(args, customArgs...)
 	}
 
-	if err := runWebIndexer(config, args); err != nil {
-		return fmt.Errorf("running web-indexer: %w", err)
+	// Show the actual command being executed for transparency
+	logf("Running: %s", strings.Join(args, " "))
+
+	// Execute web-indexer directly
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Dir = config.ProjectRoot
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("web-indexer failed: %w\nOutput: %s", err, string(output))
 	}
 
-	if demoType == "local" {
-		if err := copyFiles(sourceDir, targetDir); err != nil {
+	// Copy source files for local demos (when both source and target are local paths)
+	if !strings.HasPrefix(source, "s3://") && !strings.HasPrefix(target, "s3://") {
+		if err := copyFiles(source, target); err != nil {
 			logf("Warning: Could not copy source files: %v", err)
 		}
 	}
 
 	return nil
-}
-
-func generateS3SingleDemo(config *DemoConfig, demo DemoSpec, sourceS3URI, targetS3URI string) error {
-	logf("Generating S3 demo: %s (%s -> %s)", demo.Name, sourceS3URI, targetS3URI)
-
-	args := []string{"--source", sourceS3URI, "--target", targetS3URI}
-	if demo.Args != "" {
-		customArgs, err := parseArgs(demo.Args)
-		if err != nil {
-			return fmt.Errorf("parsing args: %w", err)
-		}
-		args = append(args, customArgs...)
-	}
-
-	return runWebIndexer(config, args)
 }
 
 func generateIndexPage(config *DemoConfig, variant string) error {
@@ -580,18 +561,12 @@ func logf(format string, args ...interface{}) {
 	fmt.Printf("[DEMO] "+format+"\n", args...)
 }
 
-func runWebIndexer(config *DemoConfig, args []string) error {
-	cmd := exec.Command(config.WebIndexerBinary, args...)
-	cmd.Dir = config.ProjectRoot
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("web-indexer failed: %w\nOutput: %s", err, string(output))
+// parseArgs handles quoted arguments properly for demo configuration
+func parseArgs(s string) ([]string, error) {
+	if s == "" {
+		return nil, nil
 	}
 
-	return nil
-}
-
-func parseArgs(s string) ([]string, error) {
 	var args []string
 	var current strings.Builder
 	var inQuote bool
@@ -835,18 +810,6 @@ func validateS3BucketName(bucket string) error {
 	matched, _ := regexp.MatchString(`^[a-z0-9][a-z0-9.-]*[a-z0-9]$`, bucket)
 	if !matched || len(bucket) < 3 || len(bucket) > 63 {
 		return fmt.Errorf("invalid S3 bucket name: %s", bucket)
-	}
-
-	return nil
-}
-
-func validateCustomDomainConfig(config *DemoConfig) error {
-	if !config.Config.S3.CustomDomain.Enabled {
-		return nil
-	}
-
-	if config.Config.S3.CustomDomain.BaseURL == "" {
-		return fmt.Errorf("custom domain base_url is required when enabled")
 	}
 
 	return nil
