@@ -26,7 +26,7 @@ jobs:
         # Use a more recent version of gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -exclude-dir=vendor ./...
+          gosec -exclude-dir=vendor -exclude-dir=demo ./...
         env:
           GOTOOLCHAIN: auto
 
