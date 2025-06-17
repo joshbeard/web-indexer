@@ -235,17 +235,29 @@ func setupPaths(config *DemoConfig) error {
 
 	// Determine the demo directory - could be current dir or demo/ subdir
 	var demoDir string
+
 	if filepath.Base(wd) == "demo" {
+		// We're in the demo directory
 		demoDir = wd
 		config.ProjectRoot = filepath.Dir(wd)
 	} else {
+		// We're not in demo directory, check if demo/ subdir exists
 		demoDir = filepath.Join(wd, "demo")
 		config.ProjectRoot = wd
-		// Check if we're running from project root and demo dir exists
 		if _, err := os.Stat(demoDir); os.IsNotExist(err) {
-			// Fallback: assume current directory is the demo directory
+			// No demo/ subdir found, assume current directory is the demo directory
 			demoDir = wd
 			config.ProjectRoot = wd
+		}
+	}
+
+	// Double-check that templates exist in the determined demo directory
+	templatesPath := filepath.Join(demoDir, "templates")
+	if _, err := os.Stat(templatesPath); os.IsNotExist(err) {
+		// If templates don't exist in the calculated demo dir, try current directory
+		if _, err := os.Stat(filepath.Join(wd, "templates")); err == nil {
+			demoDir = wd
+			config.ProjectRoot = filepath.Dir(wd)
 		}
 	}
 
@@ -255,6 +267,11 @@ func setupPaths(config *DemoConfig) error {
 	config.TemplatesDir = filepath.Join(demoDir, "templates")
 
 	logf("Demo paths - Root: %s, Templates: %s, Data: %s, Config: %s", config.ProjectRoot, config.TemplatesDir, config.DemoDataDir, config.ConfigFile)
+
+	// Verify templates directory exists
+	if _, err := os.Stat(config.TemplatesDir); os.IsNotExist(err) {
+		return fmt.Errorf("templates directory not found: %s (working dir: %s)", config.TemplatesDir, wd)
+	}
 
 	if strings.Contains(config.Type, "s3") {
 		return setupS3Config(config)
