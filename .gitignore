@@ -3,6 +3,7 @@ dist
 *.zip
 *.tar.gz
 index.html
+!demo/templates/index.html
 _staging
 key.gpg
 coverage.txt
