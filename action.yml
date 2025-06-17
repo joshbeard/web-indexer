@@ -22,6 +22,15 @@ inputs:
       link to index will link to "index.html" for paths instead of just the path.
       e.g. foo/ vs foo/index.html
     required: false
+  link_up_from_root:
+    description: Show a parent/up link even when at the root of the indexed path
+    required: false
+  link_up_text:
+    description: Text to display for the up link from root (default "Go Up")
+    required: false
+  link_up_url:
+    description: URL path for the up link from root (default "..")
+    required: false
   log_level:
     description: >
       The verbosity of output (info, error, warn, debug)
@@ -74,6 +83,9 @@ runs:
     DIRS_FIRST: ${{ inputs.dirs_first }}
     INDEX_FILE: ${{ inputs.index_file }}
     LINK_TO_INDEX: ${{ inputs.link_to_index }}
+    LINK_UP_FROM_ROOT: ${{ inputs.link_up_from_root }}
+    LINK_UP_TEXT: ${{ inputs.link_up_text }}
+    LINK_UP_URL: ${{ inputs.link_up_url }}
     LOG_LEVEL: ${{ inputs.log_level }}
     MINIFY: ${{ inputs.minify }}
     NOINDEX_FILES: ${{ inputs.noindex-files }}
