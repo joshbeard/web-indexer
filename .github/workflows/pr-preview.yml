@@ -35,10 +35,34 @@ jobs:
       cleanup_only: ${{ steps.parse.outputs.cleanup_only }}
       comment_user: ${{ steps.parse.outputs.comment_user }}
       status_comment_id: ${{ steps.create-comment.outputs.result }}
+      pr_head_ref: ${{ steps.get-pr.outputs.pr_head_ref }}
+      pr_head_sha: ${{ steps.get-pr.outputs.pr_head_sha }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Get PR Information
+        id: get-pr
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            console.log(`Getting PR information for PR #${prNumber}`);
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            console.log(`PR head ref: ${pr.head.ref}`);
+            console.log(`PR head sha: ${pr.head.sha}`);
+
+            core.setOutput('pr_head_ref', pr.head.ref);
+            core.setOutput('pr_head_sha', pr.head.sha);
 
       - name: Parse comment
         id: parse
@@ -110,8 +134,10 @@ jobs:
       GITHUB_RUN_ID: ${{ github.run_id }}
 
     steps:
-      - name: Checkout
+      - name: Checkout PR
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.parse-comment.outputs.pr_head_sha }}
 
       - name: Update comment - preview starting
         uses: actions/github-script@v7
@@ -125,6 +151,8 @@ jobs:
           echo "🗂️ WEB-INDEXER PREVIEW APPROVED"
           echo "👤 Requested by: $COMMENT_USER"
           echo "📋 PR Number: $PR_NUMBER"
+          echo "🔄 PR Head SHA: ${{ needs.parse-comment.outputs.pr_head_sha }}"
+          echo "🌿 PR Head Ref: ${{ needs.parse-comment.outputs.pr_head_ref }}"
           echo "⚙️  Arguments: $CUSTOM_ARGS"
           echo "🔒 Approved by: ${{ github.actor }}"
 
@@ -297,8 +325,10 @@ jobs:
       GITHUB_RUN_ID: ${{ github.run_id }}
 
     steps:
-      - name: Checkout
+      - name: Checkout PR
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.parse-comment.outputs.pr_head_sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -319,6 +349,8 @@ jobs:
           echo "🧹 CLEANUP REQUEST APPROVED"
           echo "👤 Requested by: $COMMENT_USER"
           echo "📋 PR Number: $PR_NUMBER"
+          echo "🔄 PR Head SHA: ${{ needs.parse-comment.outputs.pr_head_sha }}"
+          echo "🌿 PR Head Ref: ${{ needs.parse-comment.outputs.pr_head_ref }}"
           echo "🔒 Approved by: ${{ github.actor }}"
 
       - name: Perform cleanup
