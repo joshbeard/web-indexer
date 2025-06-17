@@ -4,6 +4,7 @@ dist
 *.tar.gz
 index.html
 !demo/templates/index.html
+!demo/templates/demo-content/projects/project-b-skip-index/index.html
 _staging
 key.gpg
 coverage.txt
