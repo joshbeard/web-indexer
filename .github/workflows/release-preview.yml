@@ -1,12 +1,12 @@
-name: "Release Preview Deploy (Main Branch)"
+name: "Release Preview Deploy (Tags)"
 
 permissions:
   contents: read
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '*'
 
 jobs:
   deploy-release-preview:
@@ -22,9 +22,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract version from commit
+      - name: Extract version from tag
         id: get_version
-        run: echo "VERSION=main-${GITHUB_SHA:0:8}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -44,7 +44,7 @@ jobs:
 
       - name: Show release preview details
         run: |
-          echo "🚀 RELEASE PREVIEW DEPLOYMENT (MAIN BRANCH)"
+          echo "🚀 RELEASE PREVIEW DEPLOYMENT (TAG)"
           echo "📦 Version: ${{ steps.get_version.outputs.VERSION }}"
           echo "🪣 S3 Bucket: ${{ secrets.S3_BUCKET_NAME }}"
           echo "🌍 Region: $AWS_REGION"
@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "🚀 Generating release preview for version $RELEASE_VERSION..."
           echo "  Target: s3://$DEMO_S3_BUCKET"
-          echo "  Source: main branch (testing mode)"
+          echo "  Source: tag $RELEASE_VERSION"
 
           cd demo
           go run demo.go -type s3-release
