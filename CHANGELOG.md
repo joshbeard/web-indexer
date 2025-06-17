@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 - 2025-06-17
+
+* Expose link-up-from-root args in GH action
+
 ## 0.8.0 - 2025-06-17
 
 - feat: link up from root @joshbeard (#99)
