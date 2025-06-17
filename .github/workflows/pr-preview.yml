@@ -176,10 +176,10 @@ jobs:
 
           if [[ -n "$CUSTOM_ARGS" ]]; then
             echo "🎯 Generating config-based demos PLUS custom demo with args: $CUSTOM_ARGS"
-            make demo-s3 CUSTOM_DEMOS="$CUSTOM_ARGS"
+            go run demo.go -type s3 -custom-demos "$CUSTOM_ARGS"
           else
             echo "🎯 Generating all config-based demos (themes)"
-            make demo-s3
+            go run demo.go -type s3
           fi
 
       - name: Upload demo artifacts
@@ -395,9 +395,9 @@ jobs:
 
           args="${{ github.event.inputs.custom_args }}"
           if [[ -n "$args" ]]; then
-            make demo-s3 CUSTOM_DEMOS="$args"
+            go run demo.go -type s3 -custom-demos "$args"
           else
-            make demo-s3
+            go run demo.go -type s3
           fi
 
       - name: Upload manual test results

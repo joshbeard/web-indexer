@@ -60,7 +60,7 @@ jobs:
           echo "  Source: main branch (testing mode)"
 
           cd demo
-          make demo-s3-release
+          go run demo.go -type s3-release
 
       - name: Upload demo artifacts
         uses: actions/upload-artifact@v4

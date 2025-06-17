@@ -49,16 +49,6 @@ demo-s3-release: ## Generate S3 demo for release preview
 	@echo "  Release version: $(RELEASE_VERSION)"
 	go run demo.go -type s3-release
 
-.PHONY: demo-both
-demo-both: ## Generate both local and S3 demos
-	@echo "🚀 Generating both local and S3 demos..."
-	@if [ -n '$(CUSTOM_DEMOS)' ]; then \
-		echo "  Including custom demos: $(CUSTOM_DEMOS)"; \
-		go run demo.go -type both -serve -custom-demos '$(CUSTOM_DEMOS)'; \
-	else \
-		go run demo.go -type both -serve; \
-	fi
-
 .PHONY: demo-custom
 demo-custom: ## Generate custom demo with config file (e.g., make demo-custom CONFIG=my-config.yml)
 	@echo "🚀 Generating demo with custom config: $(CONFIG)"

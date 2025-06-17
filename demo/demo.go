@@ -91,11 +91,31 @@ func main() {
 		return
 	}
 
+	// Determine the demo directory for config file resolution
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Error getting working directory: %v", err)
+	}
+
+	configFilePath := *configFile
+	if !filepath.IsAbs(configFilePath) {
+		if filepath.Base(wd) == "demo" {
+			configFilePath = filepath.Join(wd, configFilePath)
+		} else {
+			demoDir := filepath.Join(wd, "demo")
+			if _, err := os.Stat(demoDir); err == nil {
+				configFilePath = filepath.Join(demoDir, configFilePath)
+			} else {
+				configFilePath = filepath.Join(wd, configFilePath)
+			}
+		}
+	}
+
 	config := &DemoConfig{
 		Type:        *demoType,
 		Serve:       *serve,
 		Cleanup:     *cleanup,
-		ConfigFile:  *configFile,
+		ConfigFile:  configFilePath,
 		CustomDemos: *customDemos,
 	}
 
@@ -213,11 +233,28 @@ func setupPaths(config *DemoConfig) error {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
 
-	config.ProjectRoot = wd
-	config.DemoDataDir = filepath.Join(wd, "data")
-	config.DemoOutputDir = filepath.Join(wd, "output")
-	config.WebIndexerBinary = filepath.Join(wd, "..", "web-indexer")
-	config.TemplatesDir = filepath.Join(wd, "templates")
+	// Determine the demo directory - could be current dir or demo/ subdir
+	var demoDir string
+	if filepath.Base(wd) == "demo" {
+		demoDir = wd
+		config.ProjectRoot = filepath.Dir(wd)
+	} else {
+		demoDir = filepath.Join(wd, "demo")
+		config.ProjectRoot = wd
+		// Check if we're running from project root and demo dir exists
+		if _, err := os.Stat(demoDir); os.IsNotExist(err) {
+			// Fallback: assume current directory is the demo directory
+			demoDir = wd
+			config.ProjectRoot = wd
+		}
+	}
+
+	config.DemoDataDir = filepath.Join(demoDir, "data")
+	config.DemoOutputDir = filepath.Join(demoDir, "output")
+	config.WebIndexerBinary = filepath.Join(config.ProjectRoot, "web-indexer")
+	config.TemplatesDir = filepath.Join(demoDir, "templates")
+
+	logf("Demo paths - Root: %s, Templates: %s, Data: %s, Config: %s", config.ProjectRoot, config.TemplatesDir, config.DemoDataDir, config.ConfigFile)
 
 	if strings.Contains(config.Type, "s3") {
 		return setupS3Config(config)
@@ -629,6 +666,10 @@ func runWebIndexer(config *DemoConfig, args []string) error {
 }
 
 func parseArgs(s string) ([]string, error) {
+	if s == "" {
+		return nil, nil
+	}
+
 	var args []string
 	var current strings.Builder
 	var inQuote bool

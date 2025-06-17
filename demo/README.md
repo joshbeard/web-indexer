@@ -7,27 +7,23 @@ This is mainly intended for use in pull requests and upon release for generating
 ## Quick Start
 
 ```bash
-# Local demo with web server
+# Local demo with web server (http://localhost:8080)
 make demo
 
 # S3 demo (requires AWS credentials)
 make demo-s3
 
-# Both local and S3 demos
-make demo-both
-
 # Add custom demos
 make demo CUSTOM_DEMOS="--theme nord --title 'My Custom Demo'"
 
 # Clean up all demo files and S3 buckets
-make demo-cleanup
+make clean
 ```
 
 ## Demo Types
 
 - **Local**: Generates demos locally and serves via HTTP server
 - **S3**: Generates demos and uploads to S3 static website hosting
-- **Both**: Generates both local and S3 demos
 
 ## GitHub Integration
 
