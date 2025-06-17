@@ -10,6 +10,9 @@ type Config struct {
 	DirsFirst      bool     `yaml:"dirs_first"      mapstructure:"dirs_first"`
 	IndexFile      string   `yaml:"index_file"      mapstructure:"index_file"`
 	LinkToIndexes  bool     `yaml:"link_to_index"   mapstructure:"link_to_index"`
+	LinkUpFromRoot bool     `yaml:"link_up_from_root" mapstructure:"link_up_from_root"`
+	LinkUpText     string   `yaml:"link_up_text"    mapstructure:"link_up_text"`
+	LinkUpURL      string   `yaml:"link_up_url"     mapstructure:"link_up_url"`
 	LogLevel       string   `yaml:"log_level"       mapstructure:"log_level"`
 	LogFile        string   `yaml:"log_file"        mapstructure:"log_file"`
 	Minify         bool     `yaml:"minify"          mapstructure:"minify"`

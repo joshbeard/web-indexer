@@ -17,23 +17,23 @@ demos:
   - name: theme.default
     title: "Theme: Default"
     description: "Clean, minimal design with automatic light/dark mode"
-    args: "--theme default --recursive --title 'Default Theme Demo - {relativePath}'"
+    args: "--theme default --recursive --title 'Default Theme Demo - {relativePath}' --link-up-from-root"
     directory: "theme.default"
 
   - name: theme.solarized
     title: "Theme: Solarized"
     description: "Based on the popular Solarized color scheme"
-    args: "--theme solarized --recursive --title 'Solarized Theme Demo - {relativePath}'"
+    args: "--theme solarized --recursive --title 'Solarized Theme Demo - {relativePath}' --link-up-from-root"
     directory: "theme.solarized"
 
   - name: theme.nord
     title: "Theme: Nord"
     description: "Arctic-inspired colors from the Nord palette"
-    args: "--theme nord --recursive --title 'Nord Theme Demo - {relativePath}'"
+    args: "--theme nord --recursive --title 'Nord Theme Demo - {relativePath}' --link-up-from-root"
     directory: "theme.nord"
 
   - name: theme.dracula
     title: "Theme: Dracula"
     description: "Vibrant, high-contrast dark theme"
-    args: "--theme dracula --recursive --title 'Dracula Theme Demo - {relativePath}'"
+    args: "--theme dracula --recursive --title 'Dracula Theme Demo - {relativePath}' --link-up-from-root"
     directory: "theme.dracula"
