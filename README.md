@@ -44,6 +44,9 @@ Flags:
   -h, --help                    help for web-indexer
   -i, --index-file string       The name of the index file (default "index.html")
   -l, --link-to-index           Link to the index file or just the path
+      --link-up-from-root       Show a parent/up link even when at the root of the indexed path
+      --link-up-text string     Text to display for the up link from root (default "Go Up")
+      --link-up-url string      URL path for the up link from root (default "..")
   -F, --log-file string         The log file
   -L, --log-level string        The log level (default "info")
   -m, --minify                  Minify the index page
@@ -112,6 +115,12 @@ Use a specific theme:
 
 ```shell
 web-indexer --source /path/to/directory --target /path/to/directory --theme solarized
+```
+
+Enable a parent/up link from the root directory:
+
+```shell
+web-indexer --source /path/to/directory --target /path/to/directory --link-up-from-root --link-up-text "Back to Parent" --link-up-url "../"
 ```
 
 Load a config:
@@ -226,6 +235,16 @@ index_file: "index.html"
 # root of the subpath (foo/ vs foo/index.html).
 link_to_index: false
 
+# link_up_from_root enables showing a parent/up link even when at the root
+# of the indexed path.
+link_up_from_root: false
+
+# link_up_text is the text to display for the up link from root.
+link_up_text: "Go Up"
+
+# link_up_url is the URL path for the up link from root.
+link_up_url: ".."
+
 # log_file is an optional path to a file to log to
 # if log_level is set and this is not, messages are logged to stderr
 log_file: ""
@@ -297,6 +316,9 @@ title: "Index of {relativePath}"
 minify: true
 recursive: true
 link_to_index: true
+link_up_from_root: true
+link_up_text: "Back to Repository Root"
+link_up_url: "../"
 order: desc
 theme: nord
 ```

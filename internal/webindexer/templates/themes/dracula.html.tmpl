@@ -25,43 +25,43 @@
         --yellow: #f1fa8c;
     }
 
-    body { 
-        font-family: 'JetBrains Mono', 'Fira Code', monospace; 
+    body {
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
         line-height: 1.6;
     }
-    
+
     h1 {
         padding: 16px;
         font-weight: 600;
         letter-spacing: -0.5px;
     }
-    
-    table { 
-        width: 100%; 
-        border-collapse: collapse; 
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
     }
-    
+
     th, td {
         text-align: left;
         padding: 10px 16px;
     }
-    
-    tr:hover { 
-        background-color: rgba(255, 255, 255, 0.05); 
+
+    tr:hover {
+        background-color: rgba(255, 255, 255, 0.05);
     }
-    
-    span.icon { 
-        margin-right: 10px; 
+
+    span.icon {
+        margin-right: 10px;
         opacity: 0.9;
     }
 
     /* Dracula theme is primarily dark, but we'll provide a light variant too */
     @media (prefers-color-scheme: light) {
-        body { 
-            background-color: #f8f8f2; 
-            color: #282a36; 
+        body {
+            background-color: #f8f8f2;
+            color: #282a36;
         }
-        h1 { 
+        h1 {
             color: var(--purple);
             background-color: #f1f1f1;
             border-bottom: 1px solid #ddd;
@@ -69,26 +69,26 @@
         a:link { color: var(--pink); }
         a:visited { color: var(--purple); }
         a:hover { color: var(--cyan); text-decoration: underline; }
-        
-        th { 
+
+        th {
             color: var(--comment);
             border-bottom: 1px solid #ddd;
         }
-        td { 
-            border-bottom: 1px solid #eee; 
+        td {
+            border-bottom: 1px solid #eee;
         }
-        tr:hover { 
-            background-color: #f5f5f5; 
+        tr:hover {
+            background-color: #f5f5f5;
         }
     }
 
     /* Dark theme (Dracula) */
     @media (prefers-color-scheme: dark) {
-        body { 
-            background-color: var(--background); 
-            color: var(--foreground); 
+        body {
+            background-color: var(--background);
+            color: var(--foreground);
         }
-        h1 { 
+        h1 {
             color: var(--purple);
             background-color: var(--current-line);
             border-bottom: 1px solid var(--selection);
@@ -96,16 +96,16 @@
         a:link { color: var(--pink); }
         a:visited { color: var(--purple); }
         a:hover { color: var(--cyan); text-decoration: underline; }
-        
-        th { 
+
+        th {
             color: var(--comment);
             border-bottom: 1px solid var(--selection);
         }
-        td { 
-            border-bottom: 1px solid var(--current-line); 
+        td {
+            border-bottom: 1px solid var(--current-line);
         }
-        tr:hover { 
-            background-color: var(--selection); 
+        tr:hover {
+            background-color: var(--selection);
         }
     }
     </style>
@@ -125,7 +125,7 @@
         {{ if .ParentURL }}
         <tr>
             <td class="filename"><a href="{{ .ParentURL }}">
-                <span class="icon">🔼</span>Go Up</a>
+                <span class="icon">🔼</span>{{ .ParentText }}</a>
             </td>
             <td>-</td>
             <td>-</td>
@@ -161,4 +161,4 @@
         {{end}}
     </table>
 </body>
-</html> 
+</html>

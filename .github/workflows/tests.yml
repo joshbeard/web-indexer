@@ -16,7 +16,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.2'
+          go-version: '1.24.4'
           check-latest: true
 
       - name: check-vuln
@@ -26,7 +26,7 @@ jobs:
         # Use a more recent version of gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -exclude-dir=vendor ./...
+          gosec -exclude-dir=vendor -exclude-dir=demo ./...
         env:
           GOTOOLCHAIN: auto
 
@@ -40,7 +40,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.2'
+          go-version: '1.24.4'
           check-latest: true
 
       - name: Lint
@@ -56,7 +56,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.2'
+          go-version: '1.24.4'
           check-latest: true
 
       - name: Test

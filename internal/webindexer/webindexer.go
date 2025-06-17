@@ -68,6 +68,7 @@ type Data struct {
 	Parent       string
 	HasParent    bool
 	ParentURL    string
+	ParentText   string
 }
 
 type BackendSetup interface {
@@ -317,7 +318,39 @@ func (i Indexer) data(items []Item, path string) (Data, error) {
 	}
 
 	if path == i.Cfg.BasePath {
-		data.HasParent = false
+		// Handle "link up from root" option
+		if i.Cfg.LinkUpFromRoot {
+			data.HasParent = true
+			data.ParentText = i.Cfg.LinkUpText
+			if data.ParentText == "" {
+				data.ParentText = "Go Up"
+			}
+
+			// Build the up link URL
+			upURL := i.Cfg.LinkUpURL
+			if upURL == "" {
+				upURL = ".."
+			}
+
+			// Respect the LinkToIndexes setting
+			if i.Cfg.LinkToIndexes {
+				upURL = strings.TrimSuffix(upURL, "/") + "/" + i.Cfg.IndexFile
+			}
+
+			// Combine with base URL if specified
+			if i.Cfg.BaseURL != "" {
+				var err error
+				data.ParentURL, err = joinURL(i.Cfg.BaseURL, upURL)
+				if err != nil {
+					log.Error("Error joining URL for link up from root:", err)
+					data.ParentURL = upURL
+				}
+			} else {
+				data.ParentURL = upURL
+			}
+		} else {
+			data.HasParent = false
+		}
 	} else {
 		parent := filepath.Dir(path)
 		// Calculate the relative parent path
@@ -327,6 +360,7 @@ func (i Indexer) data(items []Item, path string) (Data, error) {
 		}
 		data.Parent = resolveParentPath(i.Cfg.BaseURL, relativeParent, i.Cfg.IndexFile, i.Cfg.LinkToIndexes)
 		data.HasParent = parent != path
+		data.ParentText = "Go Up"
 		if data.HasParent {
 			data.ParentURL = resolveItemURL(i.Cfg.BaseURL, relativeParent, "..", true, i.Cfg.LinkToIndexes, i.Cfg.IndexFile)
 		}

@@ -16,18 +16,18 @@
         --nord1: #3b4252;
         --nord2: #434c5e;
         --nord3: #4c566a;
-        
+
         /* Snow Storm */
         --nord4: #d8dee9;
         --nord5: #e5e9f0;
         --nord6: #eceff4;
-        
+
         /* Frost */
         --nord7: #8fbcbb;
         --nord8: #88c0d0;
         --nord9: #81a1c1;
         --nord10: #5e81ac;
-        
+
         /* Aurora */
         --nord11: #bf616a;
         --nord12: #d08770;
@@ -36,43 +36,43 @@
         --nord15: #b48ead;
     }
 
-    body { 
-        font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace; 
+    body {
+        font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
         line-height: 1.6;
     }
-    
+
     h1 {
         padding: 16px;
         font-weight: 500;
         letter-spacing: -0.5px;
     }
-    
-    table { 
-        width: 100%; 
-        border-collapse: collapse; 
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
     }
-    
+
     th, td {
         text-align: left;
         padding: 10px 16px;
     }
-    
-    tr:hover { 
-        background-color: rgba(0, 0, 0, 0.05); 
+
+    tr:hover {
+        background-color: rgba(0, 0, 0, 0.05);
     }
-    
-    span.icon { 
-        margin-right: 10px; 
+
+    span.icon {
+        margin-right: 10px;
         opacity: 0.8;
     }
 
     /* Light theme (Nord Light) */
     @media (prefers-color-scheme: light) {
-        body { 
-            background-color: var(--nord6); 
-            color: var(--nord0); 
+        body {
+            background-color: var(--nord6);
+            color: var(--nord0);
         }
-        h1 { 
+        h1 {
             color: var(--nord10);
             background-color: var(--nord5);
             border-bottom: 1px solid var(--nord4);
@@ -80,26 +80,26 @@
         a:link { color: var(--nord10); }
         a:visited { color: var(--nord15); }
         a:hover { color: var(--nord8); text-decoration: underline; }
-        
-        th { 
+
+        th {
             color: var(--nord2);
             border-bottom: 1px solid var(--nord4);
         }
-        td { 
-            border-bottom: 1px solid var(--nord5); 
+        td {
+            border-bottom: 1px solid var(--nord5);
         }
-        tr:hover { 
-            background-color: var(--nord5); 
+        tr:hover {
+            background-color: var(--nord5);
         }
     }
 
     /* Dark theme (Nord Dark) */
     @media (prefers-color-scheme: dark) {
-        body { 
-            background-color: var(--nord0); 
-            color: var(--nord4); 
+        body {
+            background-color: var(--nord0);
+            color: var(--nord4);
         }
-        h1 { 
+        h1 {
             color: var(--nord8);
             background-color: var(--nord1);
             border-bottom: 1px solid var(--nord3);
@@ -107,16 +107,16 @@
         a:link { color: var(--nord8); }
         a:visited { color: var(--nord15); }
         a:hover { color: var(--nord7); text-decoration: underline; }
-        
-        th { 
+
+        th {
             color: var(--nord6);
             border-bottom: 1px solid var(--nord3);
         }
-        td { 
-            border-bottom: 1px solid var(--nord1); 
+        td {
+            border-bottom: 1px solid var(--nord1);
         }
-        tr:hover { 
-            background-color: var(--nord1); 
+        tr:hover {
+            background-color: var(--nord1);
         }
     }
     </style>
@@ -136,7 +136,7 @@
         {{ if .ParentURL }}
         <tr>
             <td class="filename"><a href="{{ .ParentURL }}">
-                <span class="icon">🔼</span>Go Up</a>
+                <span class="icon">🔼</span>{{ .ParentText }}</a>
             </td>
             <td>-</td>
             <td>-</td>
@@ -172,4 +172,4 @@
         {{end}}
     </table>
 </body>
-</html> 
+</html>

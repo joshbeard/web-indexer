@@ -29,43 +29,43 @@
         --green: #859900;
     }
 
-    body { 
-        font-family: 'Menlo', 'DejaVu Sans Mono', 'Liberation Mono', monospace; 
+    body {
+        font-family: 'Menlo', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
         line-height: 1.5;
     }
-    
+
     h1 {
         padding: 16px;
         font-weight: normal;
         letter-spacing: -0.5px;
     }
-    
-    table { 
-        width: 100%; 
-        border-collapse: collapse; 
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
     }
-    
+
     th, td {
         text-align: left;
         padding: 10px 16px;
     }
-    
-    tr:hover { 
-        background-color: rgba(0, 0, 0, 0.05); 
+
+    tr:hover {
+        background-color: rgba(0, 0, 0, 0.05);
     }
-    
-    span.icon { 
-        margin-right: 10px; 
+
+    span.icon {
+        margin-right: 10px;
         opacity: 0.8;
     }
 
     /* Light theme (Solarized Light) */
     @media (prefers-color-scheme: light) {
-        body { 
-            background-color: var(--base3); 
-            color: var(--base00); 
+        body {
+            background-color: var(--base3);
+            color: var(--base00);
         }
-        h1 { 
+        h1 {
             color: var(--base01);
             background-color: var(--base2);
             border-bottom: 1px solid var(--base1);
@@ -73,26 +73,26 @@
         a:link { color: var(--blue); }
         a:visited { color: var(--violet); }
         a:hover { color: var(--cyan); text-decoration: underline; }
-        
-        th { 
+
+        th {
             color: var(--base01);
             border-bottom: 1px solid var(--base1);
         }
-        td { 
-            border-bottom: 1px solid var(--base2); 
+        td {
+            border-bottom: 1px solid var(--base2);
         }
-        tr:hover { 
-            background-color: var(--base2); 
+        tr:hover {
+            background-color: var(--base2);
         }
     }
 
     /* Dark theme (Solarized Dark) */
     @media (prefers-color-scheme: dark) {
-        body { 
-            background-color: var(--base03); 
-            color: var(--base0); 
+        body {
+            background-color: var(--base03);
+            color: var(--base0);
         }
-        h1 { 
+        h1 {
             color: var(--base1);
             background-color: var(--base02);
             border-bottom: 1px solid var(--base01);
@@ -100,16 +100,16 @@
         a:link { color: var(--blue); }
         a:visited { color: var(--violet); }
         a:hover { color: var(--cyan); text-decoration: underline; }
-        
-        th { 
+
+        th {
             color: var(--base1);
             border-bottom: 1px solid var(--base01);
         }
-        td { 
-            border-bottom: 1px solid var(--base02); 
+        td {
+            border-bottom: 1px solid var(--base02);
         }
-        tr:hover { 
-            background-color: var(--base02); 
+        tr:hover {
+            background-color: var(--base02);
         }
     }
     </style>
@@ -129,7 +129,7 @@
         {{ if .ParentURL }}
         <tr>
             <td class="filename"><a href="{{ .ParentURL }}">
-                <span class="icon">🔼</span>Go Up</a>
+                <span class="icon">🔼</span>{{ .ParentText }}</a>
             </td>
             <td>-</td>
             <td>-</td>
@@ -165,4 +165,4 @@
         {{end}}
     </table>
 </body>
-</html> 
+</html>

@@ -443,3 +443,70 @@ func TestGenerate_Recursive(t *testing.T) {
 	// 6. Assert mock expectations were met
 	mockTarget.AssertExpectations(t)
 }
+
+func TestLinkUpFromRoot(t *testing.T) {
+	// Test the "link up from root" functionality
+	sourceDir, err := os.MkdirTemp("", "TestLinkUpFromRoot*")
+	require.NoError(t, err)
+	defer os.RemoveAll(sourceDir)
+
+	// Create a test file
+	err = os.WriteFile(filepath.Join(sourceDir, "file1.txt"), []byte("content1"), 0o644)
+	require.NoError(t, err)
+
+	// Test with LinkUpFromRoot enabled
+	cfg := Config{
+		Source:         sourceDir,
+		BasePath:       sourceDir,
+		LinkUpFromRoot: true,
+		LinkUpText:     "Custom Up Text",
+		LinkUpURL:      "../custom",
+		LinkToIndexes:  false,
+		BaseURL:        "https://example.com",
+		IndexFile:      "index.html",
+	}
+
+	sourceBackend := &LocalBackend{path: sourceDir, cfg: cfg}
+	indexer := Indexer{
+		Cfg:    cfg,
+		Source: sourceBackend,
+	}
+
+	// Generate data for the root path
+	items, _, err := sourceBackend.Read(sourceDir)
+	require.NoError(t, err)
+
+	data, err := indexer.data(items, sourceDir)
+	require.NoError(t, err)
+
+	// Verify that HasParent is true and ParentURL/ParentText are set correctly
+	assert.True(t, data.HasParent, "HasParent should be true when LinkUpFromRoot is enabled")
+	assert.Equal(t, "Custom Up Text", data.ParentText, "ParentText should match config")
+	assert.Equal(t, "https://example.com/../custom", data.ParentURL, "ParentURL should be built correctly")
+
+	// Test with LinkToIndexes enabled
+	cfg.LinkToIndexes = true
+	indexer.Cfg = cfg
+
+	data, err = indexer.data(items, sourceDir)
+	require.NoError(t, err)
+
+	// Verify that the index file is appended when LinkToIndexes is true
+	assert.Equal(
+		t,
+		"https://example.com/../custom/index.html",
+		data.ParentURL,
+		"ParentURL should include index file when LinkToIndexes is true",
+	)
+
+	// Test with LinkUpFromRoot disabled
+	cfg.LinkUpFromRoot = false
+	indexer.Cfg = cfg
+
+	data, err = indexer.data(items, sourceDir)
+	require.NoError(t, err)
+
+	// Verify that HasParent is false when LinkUpFromRoot is disabled
+	assert.False(t, data.HasParent, "HasParent should be false when LinkUpFromRoot is disabled")
+	assert.Empty(t, data.ParentURL, "ParentURL should be empty when LinkUpFromRoot is disabled")
+}
