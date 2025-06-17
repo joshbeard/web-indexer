@@ -14,6 +14,7 @@ make demo
 make demo-s3
 
 # Add custom demos
+# NOTE: Use single quotes for quoted arguments
 make demo CUSTOM_DEMOS="--theme nord --title 'My Custom Demo'"
 
 # Clean up all demo files and S3 buckets
@@ -36,6 +37,7 @@ The demo system automatically generates live previews for pull requests and rele
 **Commands** (use in PR comments):
 - `/preview` - Generate all configured theme demos
 - `/preview --args "custom args"` - Generate themes + custom demo with specified args
+  - NOTE: Use single quotes for quoted arguments
 - `/preview cleanup` - Clean up S3 resources for this PR
 
 **Preview URLs**: `https://web-indexer.jbeard.dev/pr/{PR_NUMBER}/`
