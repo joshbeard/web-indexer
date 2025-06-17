@@ -456,41 +456,57 @@ func parseArgs(s string) []string {
 		return nil
 	}
 
-	// Simple case: no quotes
 	if !strings.Contains(s, `"`) && !strings.Contains(s, `'`) {
 		return strings.Fields(s)
 	}
 
-	// Handle quoted arguments
 	var args []string
 	var current strings.Builder
 	inQuote := false
 	var quoteChar byte
+	escaped := false
 
 	for i := 0; i < len(s); i++ {
 		c := s[i]
 
-		switch {
-		case !inQuote && (c == '"' || c == '\''):
-			inQuote = true
-			quoteChar = c
-		case inQuote && c == quoteChar:
-			inQuote = false
-			quoteChar = 0
-		case !inQuote && c == ' ':
-			if current.Len() > 0 {
-				args = append(args, current.String())
-				current.Reset()
+		if escaped {
+			current.WriteByte(c)
+			escaped = false
+			continue
+		}
+
+		switch c {
+		case '\\':
+			if inQuote {
+				if i+1 < len(s) && (s[i+1] == quoteChar || s[i+1] == '\\') {
+					escaped = true
+				} else {
+					current.WriteByte(c)
+				}
+			} else {
+				escaped = true
 			}
-			// Skip consecutive spaces
-			for i < len(s)-1 && s[i+1] == ' ' {
-				i++
+		case '"', '\'':
+			if !inQuote {
+				inQuote = true
+				quoteChar = c
+			} else if c == quoteChar {
+				inQuote = false
+				quoteChar = 0
+			} else {
+				current.WriteByte(c)
 			}
-		case c == '\\' && i+1 < len(s) && inQuote:
-			// Handle escaped characters in quotes
-			i++
-			if i < len(s) {
-				current.WriteByte(s[i])
+		case ' ', '\t', '\n':
+			if inQuote {
+				current.WriteByte(c)
+			} else {
+				if current.Len() > 0 {
+					args = append(args, current.String())
+					current.Reset()
+				}
+				for i+1 < len(s) && (s[i+1] == ' ' || s[i+1] == '\t' || s[i+1] == '\n') {
+					i++
+				}
 			}
 		default:
 			current.WriteByte(c)
@@ -519,7 +535,9 @@ func parseCustomDemos(customDemosStr string) []DemoSpec {
 		}
 
 		var name, args string
-		if colonIndex := strings.Index(spec, ":"); colonIndex > 0 {
+		colonIndex := strings.Index(spec, ":")
+		dashIndex := strings.Index(spec, "-")
+		if colonIndex > 0 && (dashIndex == -1 || colonIndex < dashIndex) {
 			name = strings.TrimSpace(spec[:colonIndex])
 			args = strings.TrimSpace(spec[colonIndex+1:])
 		} else {
