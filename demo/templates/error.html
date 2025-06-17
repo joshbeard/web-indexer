@@ -112,19 +112,39 @@
             opacity: 0.7;
         }
 
-        .footer a {
+        a {
             color: #0066cc;
             text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: #004499;
+            text-decoration: underline;
+        }
+
+        a:focus {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+            border-radius: 2px;
         }
 
         @media (prefers-color-scheme: dark) {
-            .footer a {
-                color: #4a90e2;
+            a {
+                color: #66b3ff;
+            }
+
+            a:hover {
+                color: #99ccff;
+            }
+
+            a:focus {
+                outline-color: #66b3ff;
             }
         }
 
-        .footer a:hover {
-            text-decoration: underline;
+        .footer a {
+            color: inherit;
         }
 
         h1, h2, h3 {
@@ -143,20 +163,8 @@
         <h1>🚫 Page Not Found</h1>
         <p>The page you're looking for doesn't exist in this web-indexer demo.</p>
         <p>This might happen if you're trying to access a directory without an index file.</p>
+        <p><a href="../">Back to demo list</a></p>
     </div>
-
-    <div class="info-box">
-        <h3>🌐 S3 Website Hosting</h3>
-        <p>This demo uses S3 static website hosting, which automatically serves <code>index.html</code> files when you access directories.</p>
-        <p>For example: <code>/nord/images/</code> automatically serves <code>/nord/images/index.html</code></p>
-    </div>
-
-    <h2>Available Demo Pages</h2>
-    <a href="/" class="btn">🏠 Main Demo</a>
-    <a href="/default/" class="btn">Default Theme</a>
-    <a href="/solarized/" class="btn">Solarized Theme</a>
-    <a href="/nord/" class="btn">Nord Theme</a>
-    <a href="/dracula/" class="btn">Dracula Theme</a>
 
     <hr>
     <div class="footer">

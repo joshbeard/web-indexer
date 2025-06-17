@@ -135,6 +135,37 @@
                 color: #e0e0e0;
             }
         }
+
+        a {
+            color: #0066cc;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: #004499;
+            text-decoration: underline;
+        }
+
+        a:focus {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            a {
+                color: #66b3ff;
+            }
+
+            a:hover {
+                color: #99ccff;
+            }
+
+            a:focus {
+                outline-color: #66b3ff;
+            }
+        }
     </style>
 </head>
 <body>
@@ -143,6 +174,8 @@
         <p>This tree shows the source data being indexed by web-indexer.<br>
         Special files like <code>.noindex</code> and <code>.skipindex</code> affect indexing behavior.</p>
     </div>
+
+    <p><a href="../">Back to demo list</a></p>
 
     <div class="tree">{{range .Items}}{{.Indent}}{{.Prefix}}<span class="{{.Class}}">{{.Name}}{{.Suffix}}</span>
 {{end}}</div>

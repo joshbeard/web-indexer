@@ -74,6 +74,37 @@
                 color: #e0e0e0;
             }
         }
+
+        a {
+            color: #0066cc;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: #004499;
+            text-decoration: underline;
+        }
+
+        a:focus {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            a {
+                color: #66b3ff;
+            }
+
+            a:hover {
+                color: #99ccff;
+            }
+
+            a:focus {
+                outline-color: #66b3ff;
+            }
+        }
     </style>
 </head>
 <body>
@@ -85,6 +116,10 @@
 
     <div class="content">
         This is an existing index.html file in the directory.
+    </div>
+
+    <div class="content">
+        <a href="../">Back to project list</a>
     </div>
 </body>
 </html>

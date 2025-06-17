@@ -153,6 +153,51 @@
                 color: #4a90e2;
             }
         }
+
+        a {
+            color: #0066cc;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: #004499;
+            text-decoration: underline;
+        }
+
+        a:focus {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            a {
+                color: #66b3ff;
+            }
+
+            a:hover {
+                color: #99ccff;
+            }
+
+            a:focus {
+                outline-color: #66b3ff;
+            }
+        }
+
+        .project h3 a {
+            color: inherit;
+        }
+
+        .project h3 a:hover {
+            color: #004499;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .project h3 a:hover {
+                color: #99ccff;
+            }
+        }
     </style>
 </head>
 <body>
@@ -160,8 +205,10 @@
 
     <p>This directory contains several example projects that demonstrate different web-indexer behaviors based on special control files.</p>
 
+    <p><a href="../">Back to demo list</a></p>
+
     <div class="project">
-        <h3>project-a <span class="status indexed">Fully Indexed</span></h3>
+        <h3><a href="project-a">project-a</a> <span class="status indexed">Fully Indexed</span></h3>
         <p>A standard project directory with no special control files. Web-indexer will:</p>
         <ul>
             <li>Generate a directory index page</li>
@@ -171,7 +218,7 @@
     </div>
 
     <div class="project">
-        <h3>project-b-skip-index <span class="status skip-index">Skip Index</span></h3>
+        <h3><a href="project-b-skip-index">project-b-skip-index</a> <span class="status skip-index">Skip Index</span></h3>
         <p>Contains a <code>.skipindex</code> file. Web-indexer will:</p>
         <ul>
             <li><strong>Show</strong> this directory in parent listings</li>
@@ -182,7 +229,7 @@
     </div>
 
     <div class="project">
-        <h3>project-c <span class="status indexed">Partially Indexed</span></h3>
+        <h3><a href="project-c">project-c</a> <span class="status indexed">Partially Indexed</span></h3>
         <p>A project with mixed content including a <code>private/</code> subdirectory that contains a <code>.noindex</code> file:</p>
         <ul>
             <li>Main directory is fully indexed</li>
