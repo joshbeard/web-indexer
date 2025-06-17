@@ -295,7 +295,9 @@ func generateLocalDemo(config *DemoConfig) error {
 			return fmt.Errorf("demo %s failed: %w", demo.Name, err)
 		}
 
-		copyFiles(sourceDir, targetDir)
+		if err := copyFiles(sourceDir, targetDir); err != nil {
+			return fmt.Errorf("copying files for demo %s: %w", demo.Name, err)
+		}
 	}
 
 	return generateIndexPage(config, "local")
@@ -312,8 +314,8 @@ func generateS3Demo(config *DemoConfig) error {
 
 	dataS3URI := fmt.Sprintf("s3://%s/data", config.S3Bucket)
 
-	exec.Command("aws", "s3", "sync", config.DemoDataDir, dataS3URI+"/").Run()
-	exec.Command("aws", "s3", "cp", filepath.Join(config.TemplatesDir, "error.html"),
+	_ = exec.Command("aws", "s3", "sync", config.DemoDataDir, dataS3URI+"/").Run()
+	_ = exec.Command("aws", "s3", "cp", filepath.Join(config.TemplatesDir, "error.html"),
 		fmt.Sprintf("s3://%s/error.html", config.S3Bucket)).Run()
 
 	for _, demo := range config.Config.Demos {
@@ -329,10 +331,10 @@ func generateS3Demo(config *DemoConfig) error {
 			return fmt.Errorf("S3 demo %s failed: %w", demo.Name, err)
 		}
 
-		exec.Command("aws", "s3", "sync", dataS3URI+"/", targetS3URI+"/").Run()
+		_ = exec.Command("aws", "s3", "sync", dataS3URI+"/", targetS3URI+"/").Run()
 	}
 
-	exec.Command("aws", "s3", "rm", dataS3URI, "--recursive").Run()
+	_ = exec.Command("aws", "s3", "rm", dataS3URI, "--recursive").Run()
 
 	if err := generateS3IndexPage(config); err != nil {
 		return err
@@ -388,7 +390,9 @@ func generateIndexPage(config *DemoConfig, variant string) error {
 
 func generateS3IndexPage(config *DemoConfig) error {
 	tempDir := filepath.Join(config.DemoOutputDir, "temp-s3-index")
-	os.MkdirAll(tempDir, 0o750)
+	if err := os.MkdirAll(tempDir, 0o750); err != nil {
+		return fmt.Errorf("creating temp directory: %w", err)
+	}
 	defer os.RemoveAll(tempDir)
 
 	originalOutputDir := config.DemoOutputDir
@@ -437,7 +441,9 @@ func serveDemo(config *DemoConfig) {
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: http.FileServer(http.Dir(dir)),
 	}
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		logf("Server error: %v", err)
+	}
 }
 
 func runWebIndexer(config *DemoConfig, args []string) error {
@@ -604,10 +610,10 @@ func createS3Bucket(config *DemoConfig) error {
 		return fmt.Errorf("creating S3 bucket: %w", err)
 	}
 
-	exec.Command("aws", "s3", "website", fmt.Sprintf("s3://%s", config.S3Bucket),
+	_ = exec.Command("aws", "s3", "website", fmt.Sprintf("s3://%s", config.S3Bucket),
 		"--index-document", "index.html", "--error-document", "error.html").Run()
 
-	exec.Command("aws", "s3api", "delete-public-access-block", "--bucket", config.S3Bucket).Run()
+	_ = exec.Command("aws", "s3api", "delete-public-access-block", "--bucket", config.S3Bucket).Run()
 
 	policy := fmt.Sprintf(`{
 		"Version": "2012-10-17",
@@ -621,9 +627,11 @@ func createS3Bucket(config *DemoConfig) error {
 	}`, config.S3Bucket)
 
 	if tempFile, err := os.CreateTemp("", "policy-*.json"); err == nil {
-		tempFile.WriteString(policy)
+		if _, err := tempFile.WriteString(policy); err != nil {
+			logf("Warning: failed to write policy to temp file: %v", err)
+		}
 		tempFile.Close()
-		exec.Command("aws", "s3api", "put-bucket-policy", "--bucket", config.S3Bucket,
+		_ = exec.Command("aws", "s3api", "put-bucket-policy", "--bucket", config.S3Bucket,
 			"--policy", fmt.Sprintf("file://%s", tempFile.Name())).Run()
 		os.Remove(tempFile.Name())
 	}
@@ -633,7 +641,7 @@ func createS3Bucket(config *DemoConfig) error {
 
 func deleteBucket(bucketName string) {
 	if regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*[a-z0-9]$`).MatchString(bucketName) {
-		exec.Command("aws", "s3", "rm", fmt.Sprintf("s3://%s", bucketName), "--recursive").Run()
+		_ = exec.Command("aws", "s3", "rm", fmt.Sprintf("s3://%s", bucketName), "--recursive").Run()
 		if exec.Command("aws", "s3", "rb", fmt.Sprintf("s3://%s", bucketName)).Run() == nil {
 			logf("Deleted bucket: %s", bucketName)
 		}
@@ -645,7 +653,9 @@ func trackS3Bucket(config *DemoConfig) {
 
 	var buckets []BucketRecord
 	if data, err := os.ReadFile(bucketFile); err == nil {
-		json.Unmarshal(data, &buckets)
+		if err := json.Unmarshal(data, &buckets); err != nil {
+			logf("Warning: failed to unmarshal bucket records: %v", err)
+		}
 	}
 
 	record := BucketRecord{
@@ -664,7 +674,9 @@ func trackS3Bucket(config *DemoConfig) {
 
 save:
 	if data, err := json.MarshalIndent(buckets, "", "  "); err == nil {
-		os.WriteFile(bucketFile, data, 0o600)
+		if err := os.WriteFile(bucketFile, data, 0o600); err != nil {
+			logf("Warning: failed to write bucket records: %v", err)
+		}
 	}
 }
 
@@ -673,7 +685,9 @@ func getTrackedBuckets(config *DemoConfig) []BucketRecord {
 
 	var buckets []BucketRecord
 	if data, err := os.ReadFile(bucketFile); err == nil {
-		json.Unmarshal(data, &buckets)
+		if err := json.Unmarshal(data, &buckets); err != nil {
+			logf("Warning: failed to unmarshal bucket records: %v", err)
+		}
 	}
 	return buckets
 }
@@ -690,7 +704,9 @@ func removeTrackedBucket(config *DemoConfig, bucketName string) {
 
 	if data, err := json.MarshalIndent(filtered, "", "  "); err == nil {
 		bucketFile := filepath.Join(config.ProjectRoot, "demo", ".demo-buckets.json")
-		os.WriteFile(bucketFile, data, 0o600)
+		if err := os.WriteFile(bucketFile, data, 0o600); err != nil {
+			logf("Warning: failed to write bucket records: %v", err)
+		}
 	}
 }
 
@@ -742,7 +758,7 @@ func generateSourceTree(config *DemoConfig) {
 
 	var items []TreeItem
 
-	filepath.Walk(config.DemoDataDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(config.DemoDataDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -793,7 +809,9 @@ func generateSourceTree(config *DemoConfig) {
 	if tmpl, err := template.ParseFiles(templatePath); err == nil {
 		sourceTreePath := filepath.Join(config.DemoDataDir, "source-tree.html")
 		if file, err := os.Create(sourceTreePath); err == nil {
-			tmpl.Execute(file, SourceTreeData{Items: items})
+			if err := tmpl.Execute(file, SourceTreeData{Items: items}); err != nil {
+				logf("Warning: failed to execute source tree template: %v", err)
+			}
 			file.Close()
 		}
 	}

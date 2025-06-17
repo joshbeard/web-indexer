@@ -35,7 +35,11 @@ func (l *LocalBackend) Read(path string) ([]Item, bool, error) {
 
 			// Check for skipindex files (skip indexing but include in parent)
 			if len(l.cfg.SkipIndexFiles) > 0 && contains(l.cfg.SkipIndexFiles, file.Name()) {
-				log.Infof("Skipping indexing of %s (found skipindex file %s), will include in parent directory", path, file.Name())
+				log.Infof(
+					"Skipping indexing of %s (found skipindex file %s), will include in parent directory",
+					path,
+					file.Name(),
+				)
 				// Return empty items but mark as not having noindex file
 				// This will prevent indexing this directory but still include it in the parent
 				return []Item{}, false, nil
