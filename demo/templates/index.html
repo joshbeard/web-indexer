@@ -145,7 +145,7 @@
 </head>
 <body>
     <h1>🗂️ {{.Title}}</h1>
-    <p>{{if .PRNumber}}{{if .PRUrl}}Preview for <a href="{{.PRUrl}}" target="_blank">pull request #{{.PRNumber}}</a>{{else}}Preview for pull request #{{.PRNumber}}{{end}}{{if .CustomArgs}} with custom arguments: <code>{{.CustomArgs}}</code>{{end}}{{else}}{{.Description}}{{end}}</p>
+    <p>{{if .PRNumber}}{{if .PRUrl}}Preview for <a href="{{.PRUrl}}" target="_blank">pull request #{{.PRNumber}}</a>{{else}}Preview for pull request #{{.PRNumber}}{{end}}{{end}}</p>
 
     <ul class="demo-list">
         {{range .Demos}}
