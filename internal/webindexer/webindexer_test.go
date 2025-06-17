@@ -492,7 +492,12 @@ func TestLinkUpFromRoot(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify that the index file is appended when LinkToIndexes is true
-	assert.Equal(t, "https://example.com/../custom/index.html", data.ParentURL, "ParentURL should include index file when LinkToIndexes is true")
+	assert.Equal(
+		t,
+		"https://example.com/../custom/index.html",
+		data.ParentURL,
+		"ParentURL should include index file when LinkToIndexes is true",
+	)
 
 	// Test with LinkUpFromRoot disabled
 	cfg.LinkUpFromRoot = false
