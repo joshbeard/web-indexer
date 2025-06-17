@@ -62,6 +62,16 @@ jobs:
           cd demo
           go run demo.go -type s3-release
 
+      - name: Invalidate CloudFront cache
+        env:
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          echo "🔄 Invalidating CloudFront cache for distribution: $CLOUDFRONT_DISTRIBUTION_ID"
+          aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_DISTRIBUTION_ID \
+            --paths "/*"
+          echo "✅ CloudFront cache invalidation initiated"
+
       - name: Upload demo artifacts
         uses: actions/upload-artifact@v4
         with:
