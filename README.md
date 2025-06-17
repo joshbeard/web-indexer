@@ -6,6 +6,9 @@ file directory or S3 bucket, such as a file listing page.
 <p align="center">
   <img width="420" height="236" alt="screenshot" src=".github/readme/screenshot.png" />
 </p>
+<p align="center">
+  <a href="https://web-indexer.jbeard.dev">Demo</a>
+</p>
 
 This isn't a good solution for a dynamic listing of directories or S3 buckets,
 but it's simple and works for content that remains static between
