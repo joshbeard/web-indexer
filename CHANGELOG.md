@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0 - 2025-06-17
+
+- feat: link up from root @joshbeard (#99)
+- feat: align S3 and Docker timezone handling with local filesystem @huncrys (#89)
+- feat: allow specifying custom S3 endpoint @huncrys (#88)
+- feat/generate demos (ci) @joshbeard (#93)
+
 ## 0.7.2 - 2025-05-10
 
 * ci fixes for multiarch builds
