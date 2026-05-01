@@ -46,9 +46,13 @@ golangci-lint: ## Lint using 'golangci-lint'
 lint: modverify vet gofumpt lines golangci-lint ## Run all linters
 
 ## Testing ##
+# Packages included in coverage.txt — exclude demo/, which has no tests; coverage tooling
+# on such packages interacts badly with some Go toolchain upgrade paths used in CI.
+COVER_PKGS := $(shell go list ./... | grep -Fv '/demo')
+
 .PHONY: test
 test: ## Run unit and race tests with 'go test'
-	go test -v -count=1 -parallel=4 -coverprofile=coverage.txt -covermode count ./...
+	go test -v -count=1 -parallel=4 -coverprofile=coverage.txt -covermode count $(COVER_PKGS)
 	go test -race -short ./...
 
 ## Coverage ##
