@@ -3,6 +3,9 @@
 
 VERSION := $(shell git describe --tags --always --dirty)
 
+# golangci-lint uses a versioned `go run` so its transitive deps stay off the module graph (avoids conflicts with app linters).
+GOLANGCI_LINT := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+
 .PHONY: help
 help: ## Shows this help
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -36,16 +39,20 @@ lines-fix: lines ## Fix long lines
 .PHONY: golangci-lint
 golangci-lint: ## Lint using 'golangci-lint'
 	@echo "Checking linting (golangci-lint)..."
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint \
+	@go run $(GOLANGCI_LINT) \
 	run --timeout=300s --out-format checkstyle ./... 2>&1 | tee checkstyle-report.xml
 
 .PHONY: lint
 lint: modverify vet gofumpt lines golangci-lint ## Run all linters
 
 ## Testing ##
+# Packages included in coverage.txt — exclude demo/, which has no tests; coverage tooling
+# on such packages interacts badly with some Go toolchain upgrade paths used in CI.
+COVER_PKGS := $(shell go list ./... | grep -Fv '/demo')
+
 .PHONY: test
 test: ## Run unit and race tests with 'go test'
-	go test -v -count=1 -parallel=4 -coverprofile=coverage.txt -covermode count ./...
+	go test -v -count=1 -parallel=4 -coverprofile=coverage.txt -covermode count $(COVER_PKGS)
 	go test -race -short ./...
 
 ## Coverage ##
