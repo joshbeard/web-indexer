@@ -3,6 +3,9 @@
 
 VERSION := $(shell git describe --tags --always --dirty)
 
+# golangci-lint uses a versioned `go run` so its transitive deps stay off the module graph (avoids conflicts with app linters).
+GOLANGCI_LINT := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+
 .PHONY: help
 help: ## Shows this help
 	@egrep -h '\s##\s' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -36,7 +39,7 @@ lines-fix: lines ## Fix long lines
 .PHONY: golangci-lint
 golangci-lint: ## Lint using 'golangci-lint'
 	@echo "Checking linting (golangci-lint)..."
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint \
+	@go run $(GOLANGCI_LINT) \
 	run --timeout=300s --out-format checkstyle ./... 2>&1 | tee checkstyle-report.xml
 
 .PHONY: lint
