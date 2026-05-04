@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/vuln v1.3.0
 	gopkg.in/yaml.v3 v3.0.1
-	mvdan.cc/gofumpt v0.9.2
+	mvdan.cc/gofumpt v0.10.0
 )
 
 require (
@@ -32,7 +32,6 @@ require (
 	github.com/fsnotify/fsnotify v1.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
