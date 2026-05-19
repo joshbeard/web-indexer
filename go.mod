@@ -4,7 +4,7 @@ go 1.25.9
 
 require (
 	github.com/aws/aws-sdk-go v1.55.8
-	github.com/boumenot/gocover-cobertura v1.4.0
+	github.com/boumenot/gocover-cobertura v1.5.0
 	github.com/charmbracelet/log v1.0.0
 	github.com/segmentio/golines v0.13.0
 	github.com/spf13/cobra v1.10.2
