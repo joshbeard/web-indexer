@@ -4,7 +4,7 @@
 VERSION := $(shell git describe --tags --always --dirty)
 
 # golangci-lint uses a versioned `go run` so its transitive deps stay off the module graph (avoids conflicts with app linters).
-GOLANGCI_LINT := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+GOLANGCI_LINT := github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 
 .PHONY: help
 help: ## Shows this help
