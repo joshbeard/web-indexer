@@ -1,13 +1,14 @@
 package webindexer
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
 
 	"charm.land/log/v2"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 type S3Backend struct {
@@ -17,8 +18,16 @@ type S3Backend struct {
 }
 
 type S3API interface {
-	ListObjectsV2(input *s3.ListObjectsV2Input) (*s3.ListObjectsV2Output, error)
-	PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error)
+	ListObjectsV2(
+		ctx context.Context,
+		params *s3.ListObjectsV2Input,
+		optFns ...func(*s3.Options),
+	) (*s3.ListObjectsV2Output, error)
+	PutObject(
+		ctx context.Context,
+		params *s3.PutObjectInput,
+		optFns ...func(*s3.Options),
+	) (*s3.PutObjectOutput, error)
 }
 
 var _ FileSource = &S3Backend{}
@@ -43,7 +52,7 @@ func (s *S3Backend) Read(prefix string) ([]*Item, bool, error) {
 		Delimiter: aws.String("/"),
 	}
 
-	resp, err := s.svc.ListObjectsV2(req)
+	resp, err := s.svc.ListObjectsV2(context.TODO(), req)
 	if err != nil {
 		return nil, false, fmt.Errorf("unable to list S3 objects: %w", err)
 	}
@@ -103,7 +112,7 @@ func (s *S3Backend) Read(prefix string) ([]*Item, bool, error) {
 			Delimiter: aws.String("/"),
 		}
 
-		subResp, err := s.svc.ListObjectsV2(subReq)
+		subResp, err := s.svc.ListObjectsV2(context.TODO(), subReq)
 		if err != nil {
 			return nil, false, fmt.Errorf("unable to list S3 objects in prefix %s: %w", *commonPrefix.Prefix, err)
 		}
@@ -150,12 +159,11 @@ func (s *S3Backend) Write(data Data, content string) error {
 	size := humanizeBytes(int64(strReader.Len()))
 	log.Infof("Uploading %s to %s/%s", size, bucket, target)
 
-	_, err := s.svc.PutObject(&s3.PutObjectInput{
-		Bucket:          aws.String(bucket),
-		Key:             aws.String(target),
-		Body:            aws.ReadSeekCloser(strReader),
-		ContentType:     aws.String("text/html"),
-		ContentEncoding: aws.String("utf-8"),
+	_, err := s.svc.PutObject(context.TODO(), &s3.PutObjectInput{
+		Bucket:      aws.String(bucket),
+		Key:         aws.String(target),
+		Body:        strReader,
+		ContentType: aws.String("text/html; charset=utf-8"),
 	})
 	return err
 }

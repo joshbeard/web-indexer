@@ -510,3 +510,40 @@ func TestLinkUpFromRoot(t *testing.T) {
 	assert.False(t, data.HasParent, "HasParent should be false when LinkUpFromRoot is disabled")
 	assert.Empty(t, data.ParentURL, "ParentURL should be empty when LinkUpFromRoot is disabled")
 }
+
+func TestSetupBackends_CustomS3Endpoint(t *testing.T) {
+	tests := []struct {
+		name       string
+		s3Endpoint string
+		expected   string
+	}{
+		{
+			name:       "url with scheme",
+			s3Endpoint: "https://custom-s3-endpoint",
+			expected:   "https://custom-s3-endpoint",
+		},
+		{
+			name:       "url without scheme",
+			s3Endpoint: "custom-s3-endpoint",
+			expected:   "https://custom-s3-endpoint",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			os.Clearenv()
+
+			indexer := &Indexer{
+				Cfg: Config{
+					Source:     "s3://test-bucket/source/",
+					S3Endpoint: tc.s3Endpoint,
+				},
+			}
+
+			err := setupBackends(indexer)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expected, *indexer.s3.Options().BaseEndpoint)
+		})
+	}
+}
