@@ -1,6 +1,7 @@
 package webindexer
 
 import (
+	"slices"
 	"sort"
 	"strconv"
 	"unicode"
@@ -17,9 +18,7 @@ func (i *Indexer) sort(items *[]TemplateItem) {
 	}
 
 	if i.Cfg.OrderByValue() == OrderDesc {
-		sort.SliceStable(*items, func(i, j int) bool {
-			return !cmpNatural((*items)[i].Name, (*items)[j].Name)
-		})
+		slices.Reverse(*items)
 	}
 
 	if i.Cfg.DirsFirst {
@@ -35,7 +34,7 @@ func orderByName(items *[]TemplateItem) {
 
 func orderByLastModified(items *[]TemplateItem) {
 	sort.SliceStable(*items, func(i, j int) bool {
-		return (*items)[i].LastModified > (*items)[j].LastModified
+		return (*items)[i].LastModified < (*items)[j].LastModified
 	})
 }
 
