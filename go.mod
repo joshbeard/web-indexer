@@ -4,7 +4,9 @@ go 1.26
 
 require (
 	charm.land/log/v2 v2.0.0
-	github.com/aws/aws-sdk-go v1.55.8
+	github.com/aws/aws-sdk-go-v2 v1.43.5
+	github.com/aws/aws-sdk-go-v2/config v1.32.36
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.107.1
 	github.com/boumenot/gocover-cobertura v1.5.0
 	github.com/segmentio/golines v0.13.0
 	github.com/spf13/cobra v1.10.2
@@ -19,6 +21,21 @@ require (
 	charm.land/lipgloss/v2 v2.0.6 // indirect
 	github.com/alecthomas/kingpin/v2 v2.4.0 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.17 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.35 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.36 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.36 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.36 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.37 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.16 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.29 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.36 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.37 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.5.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.33.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.38.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.45.5 // indirect
+	github.com/aws/smithy-go v1.27.7 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260812204455-68fa937c71be // indirect
 	github.com/charmbracelet/x/ansi v0.11.8 // indirect
@@ -34,7 +51,6 @@ require (
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect

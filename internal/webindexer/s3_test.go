@@ -1,28 +1,43 @@
 package webindexer
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	mockContext = mock.MatchedBy(func(ctx context.Context) bool { return true })
+	mockOptFns  = mock.MatchedBy(func(optFns []func(*s3.Options)) bool { return true })
 )
 
 type MockS3Client struct {
 	mock.Mock
 }
 
-func (m *MockS3Client) ListObjectsV2(input *s3.ListObjectsV2Input) (*s3.ListObjectsV2Output, error) {
-	args := m.Called(input)
+func (m *MockS3Client) ListObjectsV2(
+	context context.Context,
+	params *s3.ListObjectsV2Input,
+	optFns ...func(*s3.Options),
+) (*s3.ListObjectsV2Output, error) {
+	args := m.Called(context, params, optFns)
 	return args.Get(0).(*s3.ListObjectsV2Output), args.Error(1)
 }
 
-func (m *MockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
-	args := m.Called(input)
+func (m *MockS3Client) PutObject(
+	context context.Context,
+	params *s3.PutObjectInput,
+	optFns ...func(*s3.Options),
+) (*s3.PutObjectOutput, error) {
+	args := m.Called(context, params, optFns)
 	return args.Get(0).(*s3.PutObjectOutput), args.Error(1)
 }
 
@@ -39,8 +54,13 @@ func TestS3BackendRead(t *testing.T) {
 		},
 	}
 
-	mockSvc.On("ListObjectsV2", mock.Anything).Return(&s3.ListObjectsV2Output{
-		Contents: []*s3.Object{
+	mockSvc.On(
+		"ListObjectsV2",
+		mockContext,
+		mock.Anything,
+		mockOptFns,
+	).Return(&s3.ListObjectsV2Output{
+		Contents: []types.Object{
 			{
 				Key:          aws.String("prefix/file1.txt"),
 				Size:         aws.Int64(1024),
@@ -62,7 +82,7 @@ func TestS3BackendRead(t *testing.T) {
 				LastModified: aws.Time(time.Now()),
 			},
 		},
-		CommonPrefixes: []*s3.CommonPrefix{
+		CommonPrefixes: []types.CommonPrefix{
 			{
 				Prefix: aws.String("prefix/"),
 			},
@@ -126,10 +146,10 @@ func TestS3BackendReadWithNoIndex(t *testing.T) {
 	}
 
 	// Mock response with a noindex file
-	mockSvc.On("ListObjectsV2", mock.MatchedBy(func(input *s3.ListObjectsV2Input) bool {
+	mockSvc.On("ListObjectsV2", mockContext, mock.MatchedBy(func(input *s3.ListObjectsV2Input) bool {
 		return *input.Bucket == "test-bucket" && *input.Prefix == "prefix/"
-	})).Return(&s3.ListObjectsV2Output{
-		Contents: []*s3.Object{
+	}), mockOptFns).Return(&s3.ListObjectsV2Output{
+		Contents: []types.Object{
 			{
 				Key:          aws.String("prefix/.noindex"),
 				Size:         aws.Int64(0),
@@ -165,10 +185,10 @@ func TestS3BackendReadWithNoIndexSimple(t *testing.T) {
 	}
 
 	// Mock response with a noindex file
-	mockSvc.On("ListObjectsV2", mock.MatchedBy(func(input *s3.ListObjectsV2Input) bool {
+	mockSvc.On("ListObjectsV2", mockContext, mock.MatchedBy(func(input *s3.ListObjectsV2Input) bool {
 		return *input.Bucket == "test-bucket" && (*input.Prefix == "" || *input.Prefix == "/")
-	})).Return(&s3.ListObjectsV2Output{
-		Contents: []*s3.Object{
+	}), mockOptFns).Return(&s3.ListObjectsV2Output{
+		Contents: []types.Object{
 			{
 				Key:          aws.String(".noindex"),
 				Size:         aws.Int64(0),
@@ -199,7 +219,9 @@ func TestS3BackendWrite(t *testing.T) {
 	}
 
 	// Setup mock response for PutObject
-	mockSvc.On("PutObject", mock.AnythingOfType("*s3.PutObjectInput")).Return(&s3.PutObjectOutput{}, nil)
+	mockSvc.On(
+		"PutObject", mockContext, mock.AnythingOfType("*s3.PutObjectInput"), mockOptFns,
+	).Return(&s3.PutObjectOutput{}, nil)
 
 	data := Data{
 		RelativePath: "subdir/",
@@ -211,12 +233,11 @@ func TestS3BackendWrite(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify that PutObject was called as expected
-	mockSvc.AssertCalled(t, "PutObject", mock.MatchedBy(func(input *s3.PutObjectInput) bool {
+	mockSvc.AssertCalled(t, "PutObject", mockContext, mock.MatchedBy(func(input *s3.PutObjectInput) bool {
 		return *input.Bucket == "test-bucket" &&
 			strings.HasSuffix(*input.Key, "subdir/index.html") &&
-			*input.ContentType == "text/html" &&
-			*input.ContentEncoding == "utf-8"
-	}))
+			*input.ContentType == "text/html; charset=utf-8"
+	}), mockOptFns)
 
 	mockSvc.AssertExpectations(t)
 }
