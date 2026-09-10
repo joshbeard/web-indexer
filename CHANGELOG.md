@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.10.0 - 2026-09-10
+
+### Changes
+
+- Load environment variables with viper @huncrys (#144)
+- Honor sort_by field when order is desc @huncrys (#142)
+
+### Chores
+
+- Migrate to aws-sdk-go-v2 @huncrys (#143)
+- chore(deps): migrate to charm.land/log/v2 @huncrys (#145)
+- build(deps): bump the go group with 3 updates @[dependabot[bot]](https://github.com/apps/dependabot) (#151)
+- chore: go and gh actions updates @joshbeard (#150)
+- Chore/updates 2026 07 14 @joshbeard (#135)
+- Chore/updates 2026 07 @joshbeard (#130)
+- Dependency updates @joshbeard (#127)
+- build(deps): bump docker/setup-buildx-action from 3 to 4 @[dependabot[bot]](https://github.com/apps/dependabot) (#117)
+- build(deps): bump actions/github-script from 7 to 9 @[dependabot[bot]](https://github.com/apps/dependabot) (#119)
+- build(deps): bump stefanzweifel/git-auto-commit-action from 6 to 7 @[dependabot[bot]](https://github.com/apps/dependabot) (#118)
+- build(deps): bump docker/setup-qemu-action from 3 to 4 @[dependabot[bot]](https://github.com/apps/dependabot) (#116)
+- build(deps): bump github/codeql-action from 3 to 4 @[dependabot[bot]](https://github.com/apps/dependabot) (#115)
+- build(deps): bump aws-actions/configure-aws-credentials from 4 to 6 @[dependabot[bot]](https://github.com/apps/dependabot) (#109)
+- build(deps): bump actions/setup-go from 5 to 6 @[dependabot[bot]](https://github.com/apps/dependabot) (#108)
+- maint: dependency updates @joshbeard (#114)
+- build(deps): bump github.com/go-viper/mapstructure/v2 from 2.3.0 to 2.4.0 in the go_modules group across 1 directory @[dependabot[bot]](https://github.com/apps/dependabot) (#112)
+
 ## 0.9.0 - 2026-01-10
 
 - feat: directory stats @huncrys (#90)
