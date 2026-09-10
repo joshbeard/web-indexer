@@ -209,9 +209,10 @@ web-index:
 
 ## Configuration
 
-You can configure the behavior of `web-indexer` using command-line arguments
-and/or a YAML config file. Both are evaluated with the command-line arguments
-taking precedence.
+You can configure the behavior of `web-indexer` using command-line arguments,
+environment variables, and/or a YAML config file. They are evaluated with the
+command-line arguments taking precedence, then environment variables, then the
+config file.
 
 Configuration files named `.web-indexer.yml` or `.web-indexer.yaml` in the
 current working directory will be automatically loaded.
@@ -309,6 +310,26 @@ theme: "default"
 #   {relativePath} - the path relative to the source
 title: ""
 ```
+
+### Environment Variables
+
+Every configuration key can also be set through an environment variable named
+after it in uppercase. For example, `base_url` is read from `BASE_URL`,
+`link_up_from_root` from `LINK_UP_FROM_ROOT`, and `s3_endpoint` from
+`S3_ENDPOINT`.
+
+An environment variable that is set but empty is treated as unset, so it falls
+back to the config file or the default rather than overriding them with an
+empty value.
+
+Two variables are named differently from their configuration keys, for
+compatibility with earlier releases:
+
+- `SKIP` sets `skips`
+- `SORT` sets `sort_by`
+
+The path to the config file itself is read from `CONFIG`, matching the
+`--config` argument.
 
 ### Example Configuration
 

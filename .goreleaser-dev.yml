@@ -64,8 +64,6 @@ dockers:
     goarch: arm64
     image_templates:
       - ghcr.io/joshbeard/web-indexer/web-indexer:{{ .Env.SNAPSHOT_TAG }}-arm64
-    extra_files:
-      - "entrypoint.sh"
     build_flag_templates:
       - "--pull"
       - "--platform=linux/arm64/v8"

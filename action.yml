@@ -93,7 +93,7 @@ runs:
     ORDER: ${{ inputs.order }}
     RECURSIVE: ${{ inputs.recursive }}
     SKIP: ${{ inputs.skip }}
-    SORT: ${{ inputs.sort }}
+    SORT: ${{ inputs.sort_by }}
     SOURCE: ${{ inputs.source }}
     TARGET: ${{ inputs.target }}
     TEMPLATE: ${{ inputs.template }}

@@ -5,32 +5,32 @@ import (
 )
 
 type Config struct {
-	BaseURL        string   `yaml:"base_url"          mapstructure:"base_url"`
-	DateFormat     string   `yaml:"date_format"       mapstructure:"date_format"`
-	DirsFirst      bool     `yaml:"dirs_first"        mapstructure:"dirs_first"`
-	IndexFile      string   `yaml:"index_file"        mapstructure:"index_file"`
-	LinkToIndexes  bool     `yaml:"link_to_index"     mapstructure:"link_to_index"`
-	LinkUpFromRoot bool     `yaml:"link_up_from_root" mapstructure:"link_up_from_root"`
-	LinkUpText     string   `yaml:"link_up_text"      mapstructure:"link_up_text"`
-	LinkUpURL      string   `yaml:"link_up_url"       mapstructure:"link_up_url"`
-	LogLevel       string   `yaml:"log_level"         mapstructure:"log_level"`
-	LogFile        string   `yaml:"log_file"          mapstructure:"log_file"`
-	Minify         bool     `yaml:"minify"            mapstructure:"minify"`
-	NoIndexFiles   []string `yaml:"noindex_files"     mapstructure:"noindex_files"`
-	SkipIndexFiles []string `yaml:"skipindex_files"   mapstructure:"skipindex_files"`
-	Order          string   `yaml:"order"             mapstructure:"order"`
-	Quiet          bool     `yaml:"quiet"             mapstructure:"quiet"`
-	Recursive      bool     `yaml:"recursive"         mapstructure:"recursive"`
-	Skips          []string `yaml:"skips"             mapstructure:"skips"`
-	SortBy         string   `yaml:"sort_by"           mapstructure:"sort_by"`
-	Source         string   `yaml:"source"            mapstructure:"source"`
-	Target         string   `yaml:"target"            mapstructure:"target"`
-	Template       string   `yaml:"template"          mapstructure:"template"`
-	Theme          string   `yaml:"theme"             mapstructure:"theme"`
-	Title          string   `yaml:"title"             mapstructure:"title"`
-	CfgFile        string   `yaml:"-"`
-	BasePath       string   `yaml:"-"`
-	S3Endpoint     string   `yaml:"s3_endpoint"       mapstructure:"s3_endpoint"`
+	BaseURL        string   `mapstructure:"base_url"`
+	DateFormat     string   `mapstructure:"date_format"`
+	DirsFirst      bool     `mapstructure:"dirs_first"`
+	IndexFile      string   `mapstructure:"index_file"`
+	LinkToIndexes  bool     `mapstructure:"link_to_index"`
+	LinkUpFromRoot bool     `mapstructure:"link_up_from_root"`
+	LinkUpText     string   `mapstructure:"link_up_text"`
+	LinkUpURL      string   `mapstructure:"link_up_url"`
+	LogLevel       string   `mapstructure:"log_level"`
+	LogFile        string   `mapstructure:"log_file"`
+	Minify         bool     `mapstructure:"minify"`
+	NoIndexFiles   []string `mapstructure:"noindex_files"`
+	SkipIndexFiles []string `mapstructure:"skipindex_files"`
+	Order          string   `mapstructure:"order"`
+	Quiet          bool     `mapstructure:"quiet"`
+	Recursive      bool     `mapstructure:"recursive"`
+	Skips          []string `mapstructure:"skips"`
+	SortBy         string   `mapstructure:"sort_by"`
+	Source         string   `mapstructure:"source"`
+	Target         string   `mapstructure:"target"`
+	Template       string   `mapstructure:"template"`
+	Theme          string   `mapstructure:"theme"`
+	Title          string   `mapstructure:"title"`
+	CfgFile        string   `mapstructure:"-"`
+	BasePath       string   `mapstructure:"-"`
+	S3Endpoint     string   `mapstructure:"s3_endpoint"`
 }
 
 type SortBy string
