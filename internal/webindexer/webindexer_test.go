@@ -351,6 +351,46 @@ func TestGetThemeTemplate(t *testing.T) {
 			expected: namesOnlyTemplate,
 		},
 		{
+			name:     "tiles theme",
+			theme:    "tiles",
+			expected: tilesTemplate,
+		},
+		{
+			name:     "phosphor theme",
+			theme:    "phosphor",
+			expected: phosphorTemplate,
+		},
+		{
+			name:     "paper theme",
+			theme:    "paper",
+			expected: paperTemplate,
+		},
+		{
+			name:     "slate theme",
+			theme:    "slate",
+			expected: slateTemplate,
+		},
+		{
+			name:     "noir theme",
+			theme:    "noir",
+			expected: noirTemplate,
+		},
+		{
+			name:     "mist theme",
+			theme:    "mist",
+			expected: mistTemplate,
+		},
+		{
+			name:     "catppuccin theme",
+			theme:    "catppuccin",
+			expected: catppuccinTemplate,
+		},
+		{
+			name:     "tokyo-night theme",
+			theme:    "tokyo-night",
+			expected: tokyoNightTemplate,
+		},
+		{
 			name:     "unknown theme",
 			theme:    "unknown",
 			expected: defaultTemplate,

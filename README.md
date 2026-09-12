@@ -63,7 +63,7 @@ Flags:
   -s, --source string           REQUIRED. The source directory or S3 URI to list
   -t, --target string           REQUIRED. The target directory or S3 URI to write to
   -f, --template string         A custom template file to use for the index page
-      --theme string            The theme to use for the index page. One of: default, solarized, nord, dracula, folio, names-only (default "default")
+      --theme string            The theme to use for the index page. One of: default, solarized, nord, dracula, folio, names-only, tiles, phosphor, paper, slate, noir, mist, catppuccin, tokyo-night (default "default")
   -T, --title string            The title of the index page
   -v, --version                 version for web-indexer
 ```
@@ -144,6 +144,14 @@ Web-indexer comes with several built-in themes that provide different visual sty
 - **dracula**: Based on the popular [Dracula](https://draculatheme.com/) dark theme with vibrant, high-contrast colors
 - **folio**: A polished product-style listing with richer typography, SVG icons, and automatic light/dark mode
 - **names-only**: A sharp, filenames-only listing for fast navigation (no size or date columns), with automatic light/dark mode
+- **tiles**: An icon-first card grid (folders and files), with automatic light/dark mode
+- **phosphor**: A CRT/BBS-style monospace listing with scanlines; green phosphor in dark mode and amber reverse-video in light mode
+- **paper**: A warm, readable table with a serif title and terracotta accents, with automatic light/dark mode
+- **slate**: A cool, modern listing with a slim sticky header and hairline rows, with automatic light/dark mode
+- **noir**: A high-contrast, editorial listing with inverted-row hover, with automatic light/dark mode
+- **mist**: A quiet, airy list with sage accents and automatic light/dark mode
+- **catppuccin**: Based on the [Catppuccin](https://github.com/catppuccin/catppuccin) palette (Latte light / Mocha dark)
+- **tokyo-night**: Based on the [Tokyo Night](https://github.com/folke/tokyonight.nvim) palette (Day light / Night dark)
 
 Built-in themes are self-contained HTML and CSS (no JavaScript and no external fonts or assets).
 
@@ -310,7 +318,7 @@ target: "blah/"
 template: ""
 
 # theme is the name of the built-in theme to use.
-# Valid values: default, solarized, nord, dracula, folio, names-only
+# Valid values: default, solarized, nord, dracula, folio, names-only, tiles, phosphor, paper, slate, noir, mist, catppuccin, tokyo-night
 theme: "default"
 
 # title customizes the title field available in the template.

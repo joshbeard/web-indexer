@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --bg: #eef1f5;
+        --bar: rgba(255, 255, 255, 0.86);
+        --text: #1c2430;
+        --muted: #667385;
+        --rule: rgba(28, 36, 48, 0.10);
+        --accent: #3b6ea8;
+        --row: #ffffff;
+        --hover: #f5f8fb;
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #0e131a;
+            --bar: rgba(16, 22, 30, 0.92);
+            --text: #e8eef6;
+            --muted: #93a0b3;
+            --rule: rgba(232, 238, 246, 0.10);
+            --accent: #8cbcf0;
+            --row: #151c26;
+            --hover: #1c2633;
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html, body {
+        min-height: 100%;
+    }
+
+    body {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .bar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 0.85rem 1.25rem;
+        background: var(--bar);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--rule);
+    }
+
+    h1 {
+        font-size: 0.98rem;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .list {
+        width: min(56rem, calc(100% - 2rem));
+        margin: 1.25rem auto 3.5rem;
+        background: var(--row);
+        border: 1px solid var(--rule);
+        border-radius: 0.65rem;
+        overflow: hidden;
+    }
+
+    .head,
+    a.row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 7.5rem 14rem;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.72rem 1rem;
+    }
+
+    .head {
+        font-size: 0.7rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border-bottom: 1px solid var(--rule);
+        background: color-mix(in srgb, var(--bg) 55%, var(--row));
+    }
+
+    a.row {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px solid var(--rule);
+        transition: background-color 120ms ease;
+    }
+
+    a.row:last-child {
+        border-bottom: none;
+    }
+
+    a.row:hover,
+    a.row:focus-visible {
+        background: var(--hover);
+        outline: none;
+    }
+
+    .name {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        min-width: 0;
+        font-weight: 550;
+        letter-spacing: -0.01em;
+    }
+
+    .name span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: var(--muted);
+        flex-shrink: 0;
+    }
+
+    a.row.dir .dot {
+        background: var(--accent);
+    }
+
+    a.row.dir .name,
+    a.row.up .name {
+        font-weight: 650;
+    }
+
+    a.row.up {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 7%, var(--row));
+    }
+
+    .size, .date {
+        font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    @media (max-width: 720px) {
+        .list {
+            width: calc(100% - 1rem);
+            margin-top: 0.75rem;
+            border-radius: 0.45rem;
+        }
+
+        .head,
+        a.row {
+            grid-template-columns: minmax(0, 1fr) 6.5rem;
+        }
+
+        .date,
+        .head span:nth-child(3) {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            transition: none !important;
+        }
+    }
+    </style>
+</head>
+<body>
+    <header class="bar">
+        {{ if .Title }}
+        <h1>{{ .Title }}</h1>
+        {{ else }}
+        <h1>Index</h1>
+        {{ end }}
+    </header>
+
+    <main class="list">
+        <div class="head">
+            <span>Name</span>
+            <span>Size</span>
+            <span>Last Modified</span>
+        </div>
+        {{ if .ParentURL }}
+        <a class="row up" href="{{ .ParentURL }}">
+            <span class="name">
+                <i class="dot" aria-hidden="true"></i>
+                <span>{{ .ParentText }}</span>
+            </span>
+            <span class="size"></span>
+            <span class="date"></span>
+        </a>
+        {{ end }}
+        {{ range .Items }}
+        <a class="row{{ if .IsDir }} dir{{ end }}" href="{{ .URL }}">
+            <span class="name">
+                <i class="dot" aria-hidden="true"></i>
+                <span>{{ .Name }}</span>
+            </span>
+            <span class="size">{{ if .Size }}{{ .Size }}{{ else }}—{{ end }}</span>
+            <span class="date">{{ if .LastModified }}{{ .LastModified }}{{ else }}—{{ end }}</span>
+        </a>
+        {{ end }}
+    </main>
+</body>
+</html>

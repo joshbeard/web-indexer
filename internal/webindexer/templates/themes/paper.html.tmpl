@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --bg: #f7f1e6;
+        --sheet: #fffdf8;
+        --text: #2c241b;
+        --muted: #7a6f62;
+        --rule: #e4d8c4;
+        --accent: #9a4a2a;
+        --folder: #b85c38;
+        --link: #2c241b;
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #1a1511;
+            --sheet: #231d18;
+            --text: #f0e6d8;
+            --muted: #b3a394;
+            --rule: #3a3128;
+            --accent: #e08b6a;
+            --folder: #e09a72;
+            --link: #f0e6d8;
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html, body {
+        min-height: 100%;
+    }
+
+    body {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+        width: min(48rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2.75rem 0 4.5rem;
+    }
+
+    h1 {
+        font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+        font-size: clamp(1.6rem, 3vw, 2.15rem);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+        margin-bottom: 0.35rem;
+    }
+
+    .rule {
+        height: 2px;
+        background: var(--accent);
+        width: 3.25rem;
+        margin: 0.9rem 0 1.35rem;
+        border: 0;
+    }
+
+    .up {
+        display: inline-block;
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 600;
+        margin-bottom: 1.1rem;
+    }
+
+    .up:hover,
+    .up:focus-visible {
+        text-decoration: underline;
+        outline: none;
+    }
+
+    .sheet {
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 0.4rem;
+        overflow: hidden;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        text-align: left;
+        padding: 0.78rem 1.1rem;
+    }
+
+    th {
+        font-size: 0.72rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border-bottom: 1px solid var(--rule);
+    }
+
+    td {
+        border-bottom: 1px solid var(--rule);
+        vertical-align: middle;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tbody tr:hover {
+        background: color-mix(in srgb, var(--accent) 6%, transparent);
+    }
+
+    .filename {
+        display: flex;
+        align-items: baseline;
+        gap: 0.55rem;
+        min-width: 0;
+    }
+
+    .kind {
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        width: 2.4rem;
+        flex-shrink: 0;
+    }
+
+    tr.dir .kind {
+        color: var(--folder);
+        font-weight: 700;
+    }
+
+    a {
+        color: var(--link);
+        text-decoration: none;
+        font-weight: 550;
+    }
+
+    a:hover,
+    a:focus-visible {
+        color: var(--accent);
+        outline: none;
+    }
+
+    .size, .date {
+        font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    .size {
+        width: 7.5rem;
+    }
+
+    .date {
+        width: 14rem;
+    }
+
+    @media (max-width: 720px) {
+        .page {
+            width: min(48rem, calc(100% - 1.25rem));
+            padding-top: 1.5rem;
+        }
+
+        .date, th:nth-child(3) {
+            display: none;
+        }
+
+        th, td {
+            padding: 0.7rem 0.85rem;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="page">
+        {{ if .Title }}
+        <h1>{{ .Title }}</h1>
+        {{ else }}
+        <h1>Index</h1>
+        {{ end }}
+        <hr class="rule">
+
+        {{ if .ParentURL }}
+        <a class="up" href="{{ .ParentURL }}">← {{ .ParentText }}</a>
+        {{ end }}
+
+        <main class="sheet">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Last Modified</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .Items }}
+                    <tr{{ if .IsDir }} class="dir"{{ end }}>
+                        <td>
+                            <div class="filename">
+                                <span class="kind">{{ if .IsDir }}dir{{ else }}file{{ end }}</span>
+                                <a href="{{ .URL }}">{{ .Name }}</a>
+                            </div>
+                        </td>
+                        <td class="size">{{ if .Size }}{{ .Size }}{{ else }}—{{ end }}</td>
+                        <td class="date">{{ if .LastModified }}{{ .LastModified }}{{ else }}—{{ end }}</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </main>
+    </div>
+</body>
+</html>

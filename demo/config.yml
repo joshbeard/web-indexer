@@ -50,6 +50,54 @@ demos:
     args: "--theme names-only --recursive --title 'Names Only Theme Demo - {relativePath}' --link-up-from-root"
     directory: "theme.names-only"
 
+  - name: theme.tiles
+    title: "Theme: Tiles"
+    description: "Icon-first card grid for folders and files, with automatic light/dark mode"
+    args: "--theme tiles --recursive --title 'Tiles Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.tiles"
+
+  - name: theme.phosphor
+    title: "Theme: Phosphor"
+    description: "CRT/BBS-style listing with scanlines (green phosphor / amber light)"
+    args: "--theme phosphor --recursive --title 'Phosphor Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.phosphor"
+
+  - name: theme.paper
+    title: "Theme: Paper"
+    description: "Warm, readable table with a serif title and automatic light/dark mode"
+    args: "--theme paper --recursive --title 'Paper Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.paper"
+
+  - name: theme.slate
+    title: "Theme: Slate"
+    description: "Cool modern listing with a sticky header and automatic light/dark mode"
+    args: "--theme slate --recursive --title 'Slate Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.slate"
+
+  - name: theme.noir
+    title: "Theme: Noir"
+    description: "High-contrast editorial listing with automatic light/dark mode"
+    args: "--theme noir --recursive --title 'Noir Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.noir"
+
+  - name: theme.mist
+    title: "Theme: Mist"
+    description: "Quiet, airy listing with sage accents and automatic light/dark mode"
+    args: "--theme mist --recursive --title 'Mist Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.mist"
+
+  - name: theme.catppuccin
+    title: "Theme: Catppuccin"
+    description: "Catppuccin palette (Latte light / Mocha dark)"
+    args: "--theme catppuccin --recursive --title 'Catppuccin Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.catppuccin"
+
+  - name: theme.tokyo-night
+    title: "Theme: Tokyo Night"
+    description: "Tokyo Night palette (Day light / Night dark)"
+    args: "--theme tokyo-night --recursive --title 'Tokyo Night Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.tokyo-night"
+
   - name: custom.blueprint
     title: "Custom Template: Blueprint"
     description: "External Go template loaded with --template (CSS-only, automatic light/dark mode)"
