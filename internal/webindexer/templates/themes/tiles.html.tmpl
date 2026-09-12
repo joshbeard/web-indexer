@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --bg: #f4efe6;
+        --panel: #fffaf2;
+        --text: #1f1a14;
+        --muted: #6f675c;
+        --border: rgba(31, 26, 20, 0.10);
+        --accent: #8a4b12;
+        --folder: #c05621;
+        --file: #3d5a4c;
+        --shadow: 0 10px 28px rgba(31, 26, 20, 0.08);
+        --tile-hover: rgba(192, 86, 33, 0.08);
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #141210;
+            --panel: #1d1a17;
+            --text: #f3ece3;
+            --muted: #a3988c;
+            --border: rgba(243, 236, 227, 0.10);
+            --accent: #e7b07a;
+            --folder: #f0a05a;
+            --file: #8fbfa8;
+            --shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+            --tile-hover: rgba(240, 160, 90, 0.10);
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html, body {
+        min-height: 100%;
+    }
+
+    body {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+        width: min(64rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2.5rem 0 4rem;
+    }
+
+    header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.75rem 1.25rem;
+        margin-bottom: 1.75rem;
+    }
+
+    h1 {
+        font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 1.2;
+    }
+
+    .up {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--muted);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+    }
+
+    .up:hover,
+    .up:focus-visible {
+        color: var(--accent);
+        outline: none;
+    }
+
+    .up svg {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+        gap: 0.85rem;
+    }
+
+    a.tile {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.7rem;
+        padding: 1.05rem 1rem 0.95rem;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        text-decoration: none;
+        color: inherit;
+        min-width: 0;
+        transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease;
+    }
+
+    a.tile:hover,
+    a.tile:focus-visible {
+        background: var(--tile-hover);
+        border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+        transform: translateY(-2px);
+        outline: none;
+    }
+
+    .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3.1rem;
+        height: 3.1rem;
+        border-radius: 0.85rem;
+        background: color-mix(in srgb, var(--file) 12%, transparent);
+        color: var(--file);
+    }
+
+    a.tile.dir .icon {
+        background: color-mix(in srgb, var(--folder) 16%, transparent);
+        color: var(--folder);
+    }
+
+    .icon svg {
+        width: 1.7rem;
+        height: 1.7rem;
+    }
+
+    .name {
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.12rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+        font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 560px) {
+        .page {
+            width: min(64rem, calc(100% - 1.25rem));
+            padding-top: 1.4rem;
+        }
+
+        .grid {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        a.tile {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.75rem 0.85rem;
+            border-radius: 0.8rem;
+        }
+
+        a.tile:hover,
+        a.tile:focus-visible {
+            transform: none;
+        }
+
+        .icon {
+            width: 2.4rem;
+            height: 2.4rem;
+            flex-shrink: 0;
+        }
+
+        .icon svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .copy {
+            min-width: 0;
+            flex: 1;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            transition: none !important;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header>
+            {{ if .Title }}
+            <h1>{{ .Title }}</h1>
+            {{ else }}
+            <h1>Index</h1>
+            {{ end }}
+            {{ if .ParentURL }}
+            <a class="up" href="{{ .ParentURL }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M15 18l-6-6 6-6"></path>
+                </svg>
+                {{ .ParentText }}
+            </a>
+            {{ end }}
+        </header>
+
+        <main class="grid">
+            {{ range .Items }}
+            <a class="tile{{ if .IsDir }} dir{{ end }}" href="{{ .URL }}">
+                <span class="icon" aria-hidden="true">
+                    {{ if .IsDir }}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                    {{ else }}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"></path>
+                        <path d="M14 3v6h6"></path>
+                    </svg>
+                    {{ end }}
+                </span>
+                <span class="copy">
+                    <span class="name">{{ .Name }}</span>
+                    <span class="meta">
+                        <span>{{ if .Size }}{{ .Size }}{{ else }}{{ if .IsDir }}directory{{ else }}—{{ end }}{{ end }}</span>
+                        {{ if .LastModifiedDate }}<span>{{ .LastModifiedDate }}</span>{{ end }}
+                    </span>
+                </span>
+            </a>
+            {{ end }}
+        </main>
+    </div>
+</body>
+</html>

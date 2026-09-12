@@ -38,6 +38,30 @@ var folioTemplate string
 //go:embed templates/themes/names-only.html.tmpl
 var namesOnlyTemplate string
 
+//go:embed templates/themes/tiles.html.tmpl
+var tilesTemplate string
+
+//go:embed templates/themes/phosphor.html.tmpl
+var phosphorTemplate string
+
+//go:embed templates/themes/paper.html.tmpl
+var paperTemplate string
+
+//go:embed templates/themes/slate.html.tmpl
+var slateTemplate string
+
+//go:embed templates/themes/noir.html.tmpl
+var noirTemplate string
+
+//go:embed templates/themes/mist.html.tmpl
+var mistTemplate string
+
+//go:embed templates/themes/catppuccin.html.tmpl
+var catppuccinTemplate string
+
+//go:embed templates/themes/tokyo-night.html.tmpl
+var tokyoNightTemplate string
+
 // Indexer is the main struct for the webindexer package.
 type Indexer struct {
 	Cfg          Config
@@ -83,11 +107,12 @@ type Data struct {
 }
 
 type TemplateItem struct {
-	Name         string
-	Size         string
-	LastModified string
-	URL          string
-	IsDir        bool
+	Name             string
+	Size             string
+	LastModified     string
+	LastModifiedDate string
+	URL              string
+	IsDir            bool
 }
 
 type BackendSetup interface {
@@ -344,6 +369,22 @@ func getThemeTemplate(theme string) string {
 		return folioTemplate
 	case "names-only":
 		return namesOnlyTemplate
+	case "tiles":
+		return tilesTemplate
+	case "phosphor":
+		return phosphorTemplate
+	case "paper":
+		return paperTemplate
+	case "slate":
+		return slateTemplate
+	case "noir":
+		return noirTemplate
+	case "mist":
+		return mistTemplate
+	case "catppuccin":
+		return catppuccinTemplate
+	case "tokyo-night":
+		return tokyoNightTemplate
 	default:
 		return defaultTemplate
 	}
@@ -441,6 +482,7 @@ func (i Indexer) processItemForData(path string, item *Item) (TemplateItem, erro
 	if item.HasMetadata {
 		processed.Size = humanizeBytes(item.Size)
 		processed.LastModified = item.LastModified.Format(i.Cfg.DateFormat)
+		processed.LastModifiedDate = item.LastModified.Format("2006-01-02")
 	}
 
 	return processed, nil

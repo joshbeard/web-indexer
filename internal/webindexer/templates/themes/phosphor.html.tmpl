@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --bg: #071109;
+        --fg: #39ff88;
+        --dim: #1f8a4d;
+        --mute: #147044;
+        --rule: rgba(57, 255, 136, 0.22);
+        --glow: 0 0 18px rgba(57, 255, 136, 0.18);
+        --scan: rgba(0, 0, 0, 0.22);
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: light) {
+        :root {
+            --bg: #f4e6c4;
+            --fg: #8a4a00;
+            --dim: #b56a12;
+            --mute: #c4893a;
+            --rule: rgba(138, 74, 0, 0.22);
+            --glow: none;
+            --scan: rgba(138, 74, 0, 0.06);
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html, body {
+        min-height: 100%;
+    }
+
+    body {
+        font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        background: var(--bg);
+        color: var(--fg);
+        line-height: 1.45;
+        text-shadow: var(--glow);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent 2px,
+            var(--scan) 3px
+        );
+        opacity: 0.55;
+        z-index: 2;
+    }
+
+    .page {
+        position: relative;
+        z-index: 1;
+        width: min(52rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2.25rem 0 4rem;
+    }
+
+    .frame {
+        border: 1px solid var(--rule);
+        padding: 1.15rem 1.2rem 0.85rem;
+    }
+
+    h1 {
+        font-size: 1.05rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.15rem;
+        max-width: 100%;
+    }
+
+    h1 span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    h1::after {
+        content: "";
+        width: 0.65ch;
+        height: 1.05em;
+        background: var(--fg);
+        flex-shrink: 0;
+        animation: blink 1.1s steps(1, end) infinite;
+    }
+
+    @keyframes blink {
+        50% { opacity: 0; }
+    }
+
+    .up {
+        display: block;
+        color: var(--dim);
+        text-decoration: none;
+        margin-bottom: 0.85rem;
+        border-bottom: 1px dashed var(--rule);
+        padding-bottom: 0.7rem;
+    }
+
+    .up:hover,
+    .up:focus-visible {
+        color: var(--fg);
+        outline: none;
+    }
+
+    .list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    a.row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 0.75rem 1.25rem;
+        align-items: baseline;
+        padding: 0.28rem 0.1rem;
+        color: var(--fg);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--rule);
+    }
+
+    a.row:hover,
+    a.row:focus-visible {
+        background: color-mix(in srgb, var(--fg) 10%, transparent);
+        outline: none;
+    }
+
+    .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    .mark {
+        color: var(--mute);
+    }
+
+    a.row.dir .name {
+        font-weight: 600;
+    }
+
+    .size,
+    .date {
+        color: var(--dim);
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 720px) {
+        .date {
+            display: none;
+        }
+
+        a.row {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        h1::after {
+            animation: none;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="frame">
+            {{ if .Title }}
+            <h1><span>{{ .Title }}</span></h1>
+            {{ else }}
+            <h1><span>INDEX</span></h1>
+            {{ end }}
+
+            {{ if .ParentURL }}
+            <a class="up" href="{{ .ParentURL }}">../ {{ .ParentText }}</a>
+            {{ end }}
+
+            <nav class="list">
+                {{ range .Items }}
+                <a class="row{{ if .IsDir }} dir{{ end }}" href="{{ .URL }}">
+                    <span class="name">{{ .Name }}{{ if .IsDir }}<span class="mark">/</span>{{ end }}</span>
+                    <span class="size">{{ if .Size }}{{ .Size }}{{ else }}{{ if .IsDir }}&lt;DIR&gt;{{ else }}—{{ end }}{{ end }}</span>
+                    <span class="date">{{ if .LastModified }}{{ .LastModified }}{{ else }}—{{ end }}</span>
+                </a>
+                {{ end }}
+            </nav>
+        </div>
+    </div>
+</body>
+</html>

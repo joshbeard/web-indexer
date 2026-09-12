@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --bg: #f7f7f5;
+        --text: #111111;
+        --muted: #6b6b6b;
+        --rule: #111111;
+        --hover: #111111;
+        --hover-text: #f7f7f5;
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #0a0a0a;
+            --text: #f4f4f4;
+            --muted: #8d8d8d;
+            --rule: #f4f4f4;
+            --hover: #f4f4f4;
+            --hover-text: #0a0a0a;
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html, body {
+        min-height: 100%;
+    }
+
+    body {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+        width: min(44rem, calc(100% - 2.5rem));
+        margin: 0 auto;
+        padding: 3.5rem 0 5rem;
+    }
+
+    h1 {
+        font-size: clamp(1.7rem, 4vw, 2.4rem);
+        font-weight: 650;
+        letter-spacing: -0.055em;
+        line-height: 1.05;
+        margin-bottom: 2.25rem;
+        max-width: 18ch;
+    }
+
+    nav {
+        border-top: 2px solid var(--rule);
+    }
+
+    a.row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1.25rem;
+        align-items: baseline;
+        padding: 0.85rem 0.7rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--rule) 18%, transparent);
+        color: inherit;
+        text-decoration: none;
+        transition: background-color 120ms ease, color 120ms ease;
+    }
+
+    a.row:hover,
+    a.row:focus-visible {
+        background: var(--hover);
+        color: var(--hover-text);
+        outline: none;
+    }
+
+    .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+    }
+
+    a.row.dir .name {
+        font-weight: 650;
+    }
+
+    a.row.dir .name::after {
+        content: "/";
+        font-weight: 400;
+        opacity: 0.45;
+        margin-left: 0.05em;
+    }
+
+    a.row.up .name {
+        color: var(--muted);
+        font-weight: 550;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+    }
+
+    a.row.up:hover .name,
+    a.row.up:focus-visible .name {
+        color: inherit;
+    }
+
+    .meta {
+        display: flex;
+        gap: 1.35rem;
+        font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    a.row:hover .meta,
+    a.row:focus-visible .meta {
+        color: inherit;
+        opacity: 0.72;
+    }
+
+    @media (max-width: 640px) {
+        .page {
+            width: min(44rem, calc(100% - 1.5rem));
+            padding-top: 2rem;
+        }
+
+        .meta .date {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            transition: none !important;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="page">
+        {{ if .Title }}
+        <h1>{{ .Title }}</h1>
+        {{ else }}
+        <h1>Index</h1>
+        {{ end }}
+
+        <nav>
+            {{ if .ParentURL }}
+            <a class="row up" href="{{ .ParentURL }}">
+                <span class="name">{{ .ParentText }}</span>
+                <span class="meta"></span>
+            </a>
+            {{ end }}
+            {{ range .Items }}
+            <a class="row{{ if .IsDir }} dir{{ end }}" href="{{ .URL }}">
+                <span class="name">{{ .Name }}</span>
+                <span class="meta">
+                    <span>{{ if .Size }}{{ .Size }}{{ else }}—{{ end }}</span>
+                    {{ if .LastModifiedDate }}<span class="date">{{ .LastModifiedDate }}</span>{{ else if .LastModified }}<span class="date">{{ .LastModified }}</span>{{ end }}
+                </span>
+            </a>
+            {{ end }}
+        </nav>
+    </div>
+</body>
+</html>

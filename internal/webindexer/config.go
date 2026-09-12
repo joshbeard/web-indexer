@@ -51,12 +51,20 @@ const (
 type Theme string
 
 const (
-	ThemeDefault   Theme = "default"
-	ThemeSolarized Theme = "solarized"
-	ThemeNord      Theme = "nord"
-	ThemeDracula   Theme = "dracula"
-	ThemeFolio     Theme = "folio"
-	ThemeNamesOnly Theme = "names-only"
+	ThemeDefault    Theme = "default"
+	ThemeSolarized  Theme = "solarized"
+	ThemeNord       Theme = "nord"
+	ThemeDracula    Theme = "dracula"
+	ThemeFolio      Theme = "folio"
+	ThemeNamesOnly  Theme = "names-only"
+	ThemeTiles      Theme = "tiles"
+	ThemePhosphor   Theme = "phosphor"
+	ThemePaper      Theme = "paper"
+	ThemeSlate      Theme = "slate"
+	ThemeNoir       Theme = "noir"
+	ThemeMist       Theme = "mist"
+	ThemeCatppuccin Theme = "catppuccin"
+	ThemeTokyoNight Theme = "tokyo-night"
 )
 
 func (c Config) SortByValue() SortBy {
@@ -95,6 +103,22 @@ func (c Config) ThemeValue() Theme {
 		return ThemeFolio
 	case "names-only":
 		return ThemeNamesOnly
+	case "tiles":
+		return ThemeTiles
+	case "phosphor":
+		return ThemePhosphor
+	case "paper":
+		return ThemePaper
+	case "slate":
+		return ThemeSlate
+	case "noir":
+		return ThemeNoir
+	case "mist":
+		return ThemeMist
+	case "catppuccin":
+		return ThemeCatppuccin
+	case "tokyo-night":
+		return ThemeTokyoNight
 	default:
 		return ThemeDefault
 	}
