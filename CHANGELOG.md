@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.0 - 2026-09-12
+
+- feat: add more built-in themes @joshbeard (#153)
+
 ## 0.10.1 - 2026-09-12
 
 - New themes @joshbeard (#152)
