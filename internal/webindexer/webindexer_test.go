@@ -341,6 +341,16 @@ func TestGetThemeTemplate(t *testing.T) {
 			expected: draculaTemplate,
 		},
 		{
+			name:     "folio theme",
+			theme:    "folio",
+			expected: folioTemplate,
+		},
+		{
+			name:     "names-only theme",
+			theme:    "names-only",
+			expected: namesOnlyTemplate,
+		},
+		{
 			name:     "unknown theme",
 			theme:    "unknown",
 			expected: defaultTemplate,

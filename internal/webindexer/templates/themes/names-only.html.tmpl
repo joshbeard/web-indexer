@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --bg: #f6f6f4;
+        --text: #111111;
+        --muted: #737373;
+        --file: #404040;
+        --hover: #111111;
+        --hover-bg: rgba(17, 17, 17, 0.06);
+        --rule: rgba(17, 17, 17, 0.08);
+        --accent: #2563eb;
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #0b0b0c;
+            --text: #f4f4f5;
+            --muted: #8a8a8e;
+            --file: #c4c4c8;
+            --hover: #ffffff;
+            --hover-bg: rgba(255, 255, 255, 0.06);
+            --rule: rgba(255, 255, 255, 0.08);
+            --accent: #60a5fa;
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html, body {
+        min-height: 100%;
+    }
+
+    body {
+        font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.4;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+        width: min(36rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2.5rem 0 4rem;
+    }
+
+    h1 {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1.25rem;
+    }
+
+    nav {
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid var(--rule);
+    }
+
+    a.row {
+        display: flex;
+        align-items: baseline;
+        gap: 0;
+        min-width: 0;
+        padding: 0.62rem 0.7rem;
+        border-bottom: 1px solid var(--rule);
+        color: var(--file);
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        box-shadow: inset 2px 0 0 transparent;
+        transition: color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    a.row .name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    a.row .mark {
+        flex-shrink: 0;
+        color: var(--muted);
+        font-weight: 400;
+    }
+
+    a.row.dir {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    a.row.up {
+        color: var(--muted);
+        font-weight: 500;
+    }
+
+    a.row:hover,
+    a.row:focus-visible {
+        color: var(--hover);
+        background: var(--hover-bg);
+        box-shadow: inset 2px 0 0 var(--accent);
+        outline: none;
+    }
+
+    a.row:hover .mark,
+    a.row:focus-visible .mark {
+        color: var(--hover);
+    }
+
+    @media (max-width: 720px) {
+        .page {
+            width: min(36rem, calc(100% - 1.5rem));
+            padding-top: 1.5rem;
+        }
+
+        a.row {
+            padding-top: 0.72rem;
+            padding-bottom: 0.72rem;
+            font-size: 1rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            transition: none !important;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="page">
+        {{ if .Title }}
+        <h1>{{ .Title }}</h1>
+        {{ end }}
+
+        <nav>
+            {{ if .ParentURL }}
+            <a class="row up" href="{{ .ParentURL }}">
+                <span class="name">{{ .ParentText }}</span>
+            </a>
+            {{ end }}
+            {{ range .Items }}
+            {{ if .IsDir }}
+            <a class="row dir" href="{{ .URL }}">
+                <span class="name">{{ .Name }}</span><span class="mark">/</span>
+            </a>
+            {{ else }}
+            <a class="row file" href="{{ .URL }}">
+                <span class="name">{{ .Name }}</span>
+            </a>
+            {{ end }}
+            {{ end }}
+        </nav>
+    </div>
+</body>
+</html>

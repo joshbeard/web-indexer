@@ -37,3 +37,21 @@ demos:
     description: "Vibrant, high-contrast dark theme"
     args: "--theme dracula --recursive --title 'Dracula Theme Demo - {relativePath}' --link-up-from-root"
     directory: "theme.dracula"
+
+  - name: theme.folio
+    title: "Theme: Folio"
+    description: "Polished product-style listing with automatic light/dark mode"
+    args: "--theme folio --recursive --title 'Folio Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.folio"
+
+  - name: theme.names-only
+    title: "Theme: Names Only"
+    description: "Sharp filenames-only listing for fast navigation, with automatic light/dark mode"
+    args: "--theme names-only --recursive --title 'Names Only Theme Demo - {relativePath}' --link-up-from-root"
+    directory: "theme.names-only"
+
+  - name: custom.blueprint
+    title: "Custom Template: Blueprint"
+    description: "External Go template loaded with --template (CSS-only, automatic light/dark mode)"
+    args: "--template demo/templates/custom/blueprint.html.tmpl --recursive --title 'Custom Blueprint Demo - {relativePath}' --link-up-from-root"
+    directory: "custom.blueprint"

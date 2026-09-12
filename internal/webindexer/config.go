@@ -55,6 +55,8 @@ const (
 	ThemeSolarized Theme = "solarized"
 	ThemeNord      Theme = "nord"
 	ThemeDracula   Theme = "dracula"
+	ThemeFolio     Theme = "folio"
+	ThemeNamesOnly Theme = "names-only"
 )
 
 func (c Config) SortByValue() SortBy {
@@ -89,6 +91,10 @@ func (c Config) ThemeValue() Theme {
 		return ThemeNord
 	case "dracula":
 		return ThemeDracula
+	case "folio":
+		return ThemeFolio
+	case "names-only":
+		return ThemeNamesOnly
 	default:
 		return ThemeDefault
 	}

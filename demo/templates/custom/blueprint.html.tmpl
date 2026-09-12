@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --paper: #eef4ea;
+        --ink: #16325c;
+        --line: rgba(22, 50, 92, 0.18);
+        --muted: #3d5a80;
+        --accent: #0b6e4f;
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --paper: #082038;
+            --ink: #d7f3ff;
+            --line: rgba(120, 200, 255, 0.22);
+            --muted: #8ecae6;
+            --accent: #7bf1a8;
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        min-height: 100vh;
+        background-color: var(--paper);
+        background-image:
+            linear-gradient(var(--line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--line) 1px, transparent 1px);
+        background-size: 24px 24px;
+        color: var(--ink);
+        font-family: Georgia, "Times New Roman", serif;
+        line-height: 1.45;
+    }
+
+    .sheet {
+        width: min(44rem, calc(100% - 2rem));
+        margin: 2rem auto 3rem;
+        padding: 1.4rem 1.5rem 1.75rem;
+        border: 3px double var(--ink);
+        background: color-mix(in srgb, var(--paper) 88%, transparent);
+    }
+
+    .title-block {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1rem;
+        padding-bottom: 0.85rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid var(--ink);
+    }
+
+    h1 {
+        font-size: 1.55rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .stamp {
+        font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    .up {
+        display: inline-block;
+        margin-bottom: 0.85rem;
+        color: var(--accent);
+        font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        font-size: 0.85rem;
+        text-decoration: none;
+    }
+
+    .up:hover,
+    .up:focus-visible {
+        text-decoration: underline;
+        outline: none;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+        font-size: 0.9rem;
+    }
+
+    th {
+        text-align: left;
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        padding: 0.35rem 0.2rem 0.5rem;
+        border-bottom: 1px solid var(--ink);
+    }
+
+    td {
+        padding: 0.42rem 0.2rem;
+        border-bottom: 1px dashed var(--line);
+        vertical-align: baseline;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    a {
+        color: var(--ink);
+        text-decoration: none;
+    }
+
+    a:hover,
+    a:focus-visible {
+        color: var(--accent);
+        outline: none;
+    }
+
+    .dir a::after {
+        content: "/";
+        color: var(--muted);
+    }
+
+    .meta {
+        color: var(--muted);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 640px) {
+        .date {
+            display: none;
+        }
+
+        th:nth-child(3) {
+            display: none;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="sheet">
+        <header class="title-block">
+            {{ if .Title }}
+            <h1>{{ .Title }}</h1>
+            {{ else }}
+            <h1>Index</h1>
+            {{ end }}
+            <span class="stamp">Custom template</span>
+        </header>
+
+        {{ if .ParentURL }}
+        <a class="up" href="{{ .ParentURL }}">↑ {{ .ParentText }}</a>
+        {{ end }}
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th>Last Modified</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .Items }}
+                <tr{{ if .IsDir }} class="dir"{{ end }}>
+                    <td><a href="{{ .URL }}">{{ .Name }}</a></td>
+                    <td class="meta">{{ if .Size }}{{ .Size }}{{ else }}—{{ end }}</td>
+                    <td class="meta date">{{ if .LastModified }}{{ .LastModified }}{{ else }}—{{ end }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

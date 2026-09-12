@@ -63,7 +63,7 @@ Flags:
   -s, --source string           REQUIRED. The source directory or S3 URI to list
   -t, --target string           REQUIRED. The target directory or S3 URI to write to
   -f, --template string         A custom template file to use for the index page
-      --theme string            The theme to use for the index page. One of: default, solarized, nord, dracula (default "default")
+      --theme string            The theme to use for the index page. One of: default, solarized, nord, dracula, folio, names-only (default "default")
   -T, --title string            The title of the index page
   -v, --version                 version for web-indexer
 ```
@@ -142,6 +142,10 @@ Web-indexer comes with several built-in themes that provide different visual sty
 - **solarized**: Based on the popular [Solarized](https://ethanschoonover.com/solarized/) color scheme with carefully chosen colors for optimal readability
 - **nord**: Inspired by the [Nord](https://www.nordtheme.com/) color palette with its Arctic-inspired colors
 - **dracula**: Based on the popular [Dracula](https://draculatheme.com/) dark theme with vibrant, high-contrast colors
+- **folio**: A polished product-style listing with richer typography, SVG icons, and automatic light/dark mode
+- **names-only**: A sharp, filenames-only listing for fast navigation (no size or date columns), with automatic light/dark mode
+
+Built-in themes are self-contained HTML and CSS (no JavaScript and no external fonts or assets).
 
 ### Using Themes
 
@@ -165,6 +169,13 @@ If the built-in themes don't meet your needs, you can still use a completely cus
 
 ```shell
 web-indexer --source /path/to/directory --target /path/to/directory --template /path/to/custom/template.html
+```
+
+The demo suite includes an example: [`demo/templates/custom/blueprint.html.tmpl`](demo/templates/custom/blueprint.html.tmpl), loaded the same way:
+
+```shell
+web-indexer --source /path/to/directory --target /path/to/directory \
+  --template demo/templates/custom/blueprint.html.tmpl
 ```
 
 ## GitHub Action
@@ -299,7 +310,7 @@ target: "blah/"
 template: ""
 
 # theme is the name of the built-in theme to use.
-# Valid values: default, solarized, nord, dracula
+# Valid values: default, solarized, nord, dracula, folio, names-only
 theme: "default"
 
 # title customizes the title field available in the template.
