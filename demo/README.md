@@ -89,6 +89,7 @@ make demo CUSTOM_DEMOS="nord:--theme nord;minimal:--theme default --no-breadcrum
 - `config.yml` - Demo configuration
 - `Makefile` - Demo make targets
 - `templates/` - Demo content templates
+- `templates/custom/` - Example custom index templates (used with `--template`)
 - `data/` - Generated demo data (git-ignored)
 - `output/` - Generated demo output (git-ignored)
 - `.demo-buckets.json` - S3 bucket tracking (git-ignored)
