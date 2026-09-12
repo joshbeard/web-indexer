@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{.Title}}</title>
+    <style>
+    :root {
+        --bg: #f3eee6;
+        --bg-spot: rgba(15, 118, 110, 0.14);
+        --bg-spot-2: rgba(194, 65, 12, 0.10);
+        --panel: rgba(255, 252, 247, 0.82);
+        --panel-solid: #fffcf7;
+        --text: #1c1915;
+        --muted: #6b645b;
+        --border: rgba(28, 25, 21, 0.10);
+        --accent: #0f766e;
+        --accent-soft: rgba(15, 118, 110, 0.10);
+        --folder: #c2410c;
+        --file: #0f766e;
+        --shadow: 0 24px 60px rgba(28, 25, 21, 0.10);
+        --row-hover: rgba(15, 118, 110, 0.06);
+        color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #0c100f;
+            --bg-spot: rgba(45, 212, 191, 0.12);
+            --bg-spot-2: rgba(251, 191, 36, 0.08);
+            --panel: rgba(18, 24, 22, 0.78);
+            --panel-solid: #121816;
+            --text: #ece7df;
+            --muted: #9a9389;
+            --border: rgba(236, 231, 223, 0.10);
+            --accent: #5eead4;
+            --accent-soft: rgba(94, 234, 212, 0.12);
+            --folder: #fbbf24;
+            --file: #5eead4;
+            --shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+            --row-hover: rgba(94, 234, 212, 0.07);
+        }
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html, body {
+        min-height: 100%;
+    }
+
+    body {
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+        background-color: var(--bg);
+        background-image:
+            radial-gradient(900px 420px at 12% -8%, var(--bg-spot), transparent 58%),
+            radial-gradient(720px 380px at 108% 8%, var(--bg-spot-2), transparent 52%);
+        color: var(--text);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+        width: min(52rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2.75rem 0 4rem;
+    }
+
+    .top {
+        margin-bottom: 1.5rem;
+    }
+
+    h1 {
+        font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 1.2;
+        max-width: 42rem;
+    }
+
+    .panel {
+        background: var(--panel);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border);
+        border-radius: 1.25rem;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .up {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.85rem 1.15rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+        background: var(--accent-soft);
+    }
+
+    .up:hover {
+        color: var(--accent);
+    }
+
+    .up:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+
+    .up svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        text-align: left;
+        padding: 0.85rem 1.15rem;
+    }
+
+    th {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--panel-solid) 70%, transparent);
+    }
+
+    td {
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tbody tr {
+        transition: background-color 140ms ease;
+    }
+
+    tbody tr:hover {
+        background: var(--row-hover);
+    }
+
+    .filename {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.7rem;
+        flex-shrink: 0;
+        background: var(--accent-soft);
+        color: var(--file);
+    }
+
+    .icon.dir {
+        color: var(--folder);
+        background: color-mix(in srgb, var(--folder) 14%, transparent);
+    }
+
+    .icon svg {
+        width: 1.05rem;
+        height: 1.05rem;
+    }
+
+    a {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    a:hover {
+        color: var(--accent);
+    }
+
+    a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    .size, .date {
+        font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    .size {
+        width: 7.5rem;
+    }
+
+    .date {
+        width: 14rem;
+    }
+
+    @media (max-width: 720px) {
+        .page {
+            width: min(52rem, calc(100% - 1.25rem));
+            padding-top: 1.5rem;
+        }
+
+        th, td {
+            padding: 0.75rem 0.85rem;
+        }
+
+        .date, th:nth-child(3) {
+            display: none;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            transition: none !important;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="top">
+            {{ if .Title }}
+            <h1>{{ .Title }}</h1>
+            {{ else }}
+            <h1>Index</h1>
+            {{ end }}
+        </header>
+
+        <main class="panel">
+            {{ if .ParentURL }}
+            <a class="up" href="{{ .ParentURL }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M15 18l-6-6 6-6"></path>
+                </svg>
+                {{ .ParentText }}
+            </a>
+            {{ end }}
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Last Modified</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .Items }}
+                    <tr>
+                        <td>
+                            <div class="filename">
+                                {{ if .IsDir }}
+                                <span class="icon dir" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    </svg>
+                                </span>
+                                {{ else }}
+                                <span class="icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"></path>
+                                        <path d="M14 3v6h6"></path>
+                                    </svg>
+                                </span>
+                                {{ end }}
+                                <a href="{{ .URL }}">{{ .Name }}</a>
+                            </div>
+                        </td>
+                        <td class="size">
+                            {{ if .Size }}{{ .Size }}{{ else }}—{{ end }}
+                        </td>
+                        <td class="date">
+                            {{ if .LastModified }}{{ .LastModified }}{{ else }}—{{ end }}
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </main>
+    </div>
+</body>
+</html>

@@ -32,6 +32,12 @@ var nordTemplate string
 //go:embed templates/themes/dracula.html.tmpl
 var draculaTemplate string
 
+//go:embed templates/themes/folio.html.tmpl
+var folioTemplate string
+
+//go:embed templates/themes/names-only.html.tmpl
+var namesOnlyTemplate string
+
 // Indexer is the main struct for the webindexer package.
 type Indexer struct {
 	Cfg          Config
@@ -334,6 +340,10 @@ func getThemeTemplate(theme string) string {
 		return nordTemplate
 	case "dracula":
 		return draculaTemplate
+	case "folio":
+		return folioTemplate
+	case "names-only":
+		return namesOnlyTemplate
 	default:
 		return defaultTemplate
 	}

@@ -157,7 +157,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&cfg.Source, "source", "s", "", "REQUIRED. The source directory or S3 URI to list")
 	rootCmd.Flags().StringVarP(&cfg.Target, "target", "t", "", "REQUIRED. The target directory or S3 URI to write to")
 	rootCmd.Flags().StringVarP(&cfg.Template, "template", "f", "", "A custom template file to use for the index page")
-	rootCmd.Flags().StringVarP(&cfg.Theme, "theme", "", "default", "The theme to use for the index page. One of: default, solarized, nord, dracula")
+	rootCmd.Flags().StringVarP(&cfg.Theme, "theme", "", "default", "The theme to use for the index page. One of: default, solarized, nord, dracula, folio, names-only")
 	rootCmd.Flags().StringVarP(&cfg.Title, "title", "T", "", "The title of the index page")
 
 	err := viper.BindPFlags(rootCmd.Flags())
