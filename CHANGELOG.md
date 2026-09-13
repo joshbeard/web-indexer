@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.1 - 2026-09-13
+
+- demo: compact the demo listing page @joshbeard (#155)
+- feat: make original themes usable on small screens @joshbeard (#154)
+
 ## 0.11.0 - 2026-09-12
 
 - feat: add more built-in themes @joshbeard (#153)
