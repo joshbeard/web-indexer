@@ -359,15 +359,17 @@ func generateIndexPage(config *DemoConfig, variant string) error {
 	}
 
 	indexData := DemoIndex{
-		Title:       title,
-		Description: "Web-indexer generates themeable directory listings",
-		Demos:       config.Config.Demos,
-		PRNumber:    prNumber,
-		Repository:  repository,
-		CustomArgs:  os.Getenv("CUSTOM_ARGS"),
+		Title:      title,
+		Demos:      config.Config.Demos,
+		PRNumber:   prNumber,
+		Repository: repository,
+		CustomArgs: os.Getenv("CUSTOM_ARGS"),
 	}
 
-	if repository != "" && prNumber != "" {
+	if prNumber != "" {
+		if repository == "" {
+			repository = "joshbeard/web-indexer"
+		}
 		indexData.PRUrl = fmt.Sprintf("https://github.com/%s/pull/%s", repository, prNumber)
 	}
 
