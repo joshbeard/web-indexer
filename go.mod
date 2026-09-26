@@ -1,6 +1,6 @@
 module github.com/joshbeard/web-indexer
 
-go 1.26.0
+go 1.26.6
 
 require (
 	charm.land/log/v2 v2.0.1
