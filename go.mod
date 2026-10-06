@@ -6,7 +6,7 @@ require (
 	charm.land/log/v2 v2.0.1
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.33.6
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.113.4
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.0
 	github.com/boumenot/gocover-cobertura v1.5.0
 	github.com/segmentio/golines v0.13.0
 	github.com/spf13/cobra v1.10.2
